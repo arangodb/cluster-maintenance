@@ -1,7 +1,20 @@
 *Note: This script is has the implicit assumption that there is one dbserver with few shards and two with many (e.g., 1000,1000,10000). If there are two dbserver with lower than average number of shards, you would need to run the script twice.*
 
 # [Optional] Create unbalanced test distribution
+
 Please check [here](HOWTO_Create_Test.md).
+
+# [Kubernetes] Create tools pod
+
+```kubectl apply -f https://raw.githubusercontent.com/arangodb/debug-scripts/master/kubernetes/arango-tools.yaml```
+
+```kubectl get pods | grep arango-tool
+arango-tools-6894f44fc4-bbpgj                            1/1     Running   0          29m
+```
+
+```
+kubectl exec -it arango-tools-6894f44fc4-bbpgj bash
+```
  
 # Create the transfer plan (endpoint: agency)
 
