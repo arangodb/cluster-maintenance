@@ -1,3 +1,8 @@
+*Note: This script is has the implicit assumption that there is one dbserver with few shards and two with many (e.g., 1000,1000,10000). If there are two dbserver with lower than average number of shards, you would need to run the script twice.*
+
+# [Optional] Create unbalanced test distribution
+Please check [here](HOWTO_Create_Test.md).
+ 
 # Create the transfer plan (endpoint: agency)
 
 In step one we create a move shards plan from the agency.
