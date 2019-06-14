@@ -26,6 +26,8 @@ In this step we create a move shards plan from the Agency.
 
 `arangosh --server.endpoint "tcp://<angency-address>:<agency-port>" --javascript.execute createMovePlan.js`
 
+This must be executed on the **leader** agent.
+
 In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
 
 You can get your jpw with a command similar to the following:
