@@ -1,10 +1,14 @@
-*Note: This script is has the implicit assumption that there is one dbserver with few shards and two with many (e.g., 1000,1000,10000). If there are two dbserver with lower than average number of shards, you would need to run the script twice.*
+*Note: This script is has the implicit assumption that there is one DBServer with few shards and two with many (e.g., 1000,1000,10000). If there are two DBServers with lower than average number of shards, you would need to run the script twice.*
 
 # [Optional] Create unbalanced test distribution
 
 Please check [here](HOWTO_Create_Test.md).
 
 # [Kubernetes] Create tools pod
+
+We will need to use `arangosh` so this is a prelimiary step done to be able to run `arangosh`
+
+Deploy a the following pod:
 
 ```kubectl apply -f https://raw.githubusercontent.com/arangodb/debug-scripts/master/kubernetes/arango-tools.yaml```
 
