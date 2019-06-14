@@ -1,7 +1,7 @@
 # Create the transfer plan (endpoint: agency)
 `arangosh --server.endpoint "tcp://<angency-address>:<agency-port>" --javascript.execute createMovePlan.js`
 
-The file `moveShards.txt` will be created. Inside you'll find the description of each move shard job in an array:
+The file `moveShards.txt` will be created in the current directory. Inside you'll find the description of each move shard job in an array:
 ```
 [
  ... 
@@ -16,7 +16,9 @@ The file `moveShards.txt` will be created. Inside you'll find the description of
 ]
 ```
 
-Currently there is a limit to 50k move shard jobs set (due to JavaScript String limitations).
+*Note that* no move shard jobs are actually triggered in this stage. Further note that you need to use the agency endpoint of the *leader*.
+
+Currently there is a limit of 50k move shard jobs set (due to JavaScript String limitations).
 
 # Execute the created move plan (endpoint: coordinator)
 `arangosh --server.endpoint "tcp://<coordinator-address>:<coordinator-port>" --javascript.execute executeMovePlan.js`
