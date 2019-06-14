@@ -13,7 +13,7 @@ arango-tools-6894f44fc4-bbpgj                            1/1     Running   0    
 ```
 
 ```
-kubectl exec -it arango-tools-6894f44fc4-bbpgj bash
+kubectl exec -it arango-tools-6894f44fc4-bbpgj sh
 ```
  
 # Create the transfer plan (endpoint: agency)
