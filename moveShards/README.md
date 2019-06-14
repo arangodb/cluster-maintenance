@@ -22,11 +22,15 @@ kubectl exec -it arango-tools-6894f44fc4-bbpgj sh
  
 # Create the transfer plan (endpoint: agency)
 
-In step one we create a move shards plan from the agency.
+In this step we create a move shards plan from the Agency.
 
 `arangosh --server.endpoint "tcp://<angency-address>:<agency-port>" --javascript.execute createMovePlan.js`
 
 In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
+
+You can get your jpw with a command similar to the following:
+
+```kubectl get secrets nameofyourdep-jwt -o json | jq -r '.data.token' | base64 -D```
 
 The file `moveShards.txt` will be created in the current directory. Inside you'll find the description of each move shard job in an array:
 ```
