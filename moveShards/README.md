@@ -4,6 +4,8 @@ In step one we create a move shards plan from the agency.
 
 `arangosh --server.endpoint "tcp://<angency-address>:<agency-port>" --javascript.execute createMovePlan.js`
 
+In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
+
 The file `moveShards.txt` will be created in the current directory. Inside you'll find the description of each move shard job in an array:
 ```
 [
@@ -28,6 +30,8 @@ Currently there is a limit of 50k move shard jobs set (due to JavaScript String 
 In step two we use the coordinator to execute the plan from step one.
 
 `arangosh --server.endpoint "tcp://<coordinator-address>:<coordinator-port>" --javascript.execute executeMovePlan.js`
+
+In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
 
 The result output will provide a bit more detail of the whole process.
 
