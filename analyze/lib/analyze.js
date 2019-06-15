@@ -183,7 +183,7 @@ let printCollections = function(info) {
 };
 
 let printPrimaryShards = function(info) {
-  var table = new AsciiTable('primary shards');
+  var table = new AsciiTable('Primary Shards');
   table.setHeading('', 'Leaders', 'Followers', 'Real Followers');
 
   _.each(info.shardsPrimary, function(shards, dbServer) {
