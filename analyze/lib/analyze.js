@@ -184,7 +184,7 @@ let printCollections = function(info) {
 
 let printPrimaryShards = function(info) {
   var table = new AsciiTable('Primary Shards');
-  table.setHeading('', 'Leaders', 'Followers', 'Real Followers');
+  table.setHeading('', 'Leaders', 'Followers', 'Real Leaders');
 
   _.each(info.shardsPrimary, function(shards, dbServer) {
     table.addRow(dbServer, shards.leaders.length, shards.followers.length, shards.realLeaders.length);
