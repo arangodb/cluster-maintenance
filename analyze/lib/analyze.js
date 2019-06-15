@@ -76,6 +76,11 @@ let extractDatabases = function(info, dump) {
 
   _.each(dump.arango.Plan.Databases, function(database, name) {
     databases[name] = _.extend({
+      collections: [],
+      shards: [],
+      leaders: [],
+      followers: [],
+      realLeaders: [],
       isSystem: (name.charAt(0) === '_')
     }, database);
   });
@@ -88,11 +93,6 @@ let extractDatabases = function(info, dump) {
 
   _.each(allCollections, function(collections, dbName) {
     let database = databases[dbName];
-    database.collections = [];
-    database.shards = [];
-    database.leaders = [];
-    database.followers = [];
-    database.realLeaders = [];
 
     _.each(collections, function(collection, cId) {
       let full = dbName + "/" + collection.name;
