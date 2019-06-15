@@ -1,4 +1,7 @@
-*Note: This script is has the implicit assumption that there is one DBServer with few shards and two with many (e.g., 1000,1000,10000). If there are two DBServers with lower than average number of shards, you would need to run the script twice.*
+*Note: This script is has the implicit assumption that there is one
+DBServer with few shards and two with many (e.g.,
+1000,1000,10000). If there are two DBServers with lower than average
+number of shards, you would need to run the script twice.*
 
 # [Optional] Create unbalanced test distribution
 
@@ -6,7 +9,8 @@ Please check [here](HOWTO_Create_Test.md).
 
 # [Kubernetes] Create tools pod
 
-We will need to use `arangosh` so this is a prelimiary step done to be able to run `arangosh`
+We will need to use `arangosh` so this is a prelimiary step done to be
+able to run `arangosh`
 
 Deploy a the following pod:
 
@@ -28,7 +32,9 @@ In this step we create a move shards plan from the Agency.
 
 This must be executed on the **leader** agent.
 
-In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
+In case of an authenticated cluster, please use the option
+`--server.ask-jwt-secret`
+(https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
 
 You can get your jpw with a command similar to the following:
 
@@ -49,9 +55,12 @@ The file `moveShards.txt` will be created in the current directory. Inside you'l
 ]
 ```
 
-*Note that* no move shard jobs are actually triggered in this stage. Further note that you need to use the agency endpoint of the *leader*.
+*Note that* no move shard jobs are actually triggered in this
+stage. Further note that you need to use the agency endpoint of the
+*leader*.
 
-Currently there is a limit of 50k move shard jobs set (due to JavaScript String limitations).
+Currently there is a limit of 50k move shard jobs set (due to
+JavaScript String limitations).
 
 # Execute the created move plan (endpoint: coordinator)
 
@@ -59,7 +68,9 @@ In step two we use the coordinator to execute the plan from step one.
 
 `arangosh --server.endpoint "tcp://<coordinator-address>:<coordinator-port>" --javascript.execute executeMovePlan.js`
 
-In case of an authenticated cluster, please use the option `--server.ask-jwt-secret` (https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
+In case of an authenticated cluster, please use the option
+`--server.ask-jwt-secret`
+(https://www.arangodb.com/docs/3.4/programs-arangosh-options.html)
 
 The result output will provide a bit more detail of the whole process.
 
@@ -70,7 +81,8 @@ Moving shard: s4016713 from: PRMR-0f311e4a-bcce-41d8-bff0-670fde2366be to: PRMR-
 Started 5 move jobs. (1 of them failed)
 ```
 
-Note that this will actually trigger the move shard jobs. Further note that you can use the corrdinator endpoint of any active coordintor.
+Note that this will actually trigger the move shard jobs. Further note
+that you can use the corrdinator endpoint of any active coordintor.
 
 ## Limit number of changes
 

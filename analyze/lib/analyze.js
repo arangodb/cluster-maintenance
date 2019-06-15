@@ -122,7 +122,7 @@ let extractDatabases = function(info, dump) {
           collection: collection.name
         };
 
-        if (1 < shard.length) {
+        if (0 < shard.length) {
           coll.leaders.push(shard[0]);
           setGlobalShard(info,
             _.extend({
