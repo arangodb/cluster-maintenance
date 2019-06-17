@@ -18,6 +18,7 @@ case "${uname_output}" in
     *)          machine="UNKNOWN:${uname_output}"
 esac
 
+echo "detected os-type $machine -- resolve enabled: $do_resolve"
 
 # the script takes a single argument
 if [[ -z "$*" ]]; then
@@ -41,7 +42,7 @@ fi
 # the lib directory that is also contained in the same directory.
 if $do_resolve; then
     script_dir="$(realpath -s "$(dirname "$(readlink -s -f "${BASH_SOURCE[0]}")")")"
-    cd "$script_dir"
+    cd "$script_dir" || { echo "failed to change into binary dir $script_dir"; exit 1; }
     echo "$script_dir"
 fi
 
