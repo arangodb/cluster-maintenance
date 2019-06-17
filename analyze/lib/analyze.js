@@ -127,7 +127,7 @@ if (0 < ARGUMENTS.length) {
             database: dbName,
             cid: cId
           });
-        } else if (collection.name === undefined && collection.id === undefined) {
+        } else if (collection.name === undefined || collection.id === undefined) {
           info.broken.push({
             database: dbName,
             cid: cId,
