@@ -114,6 +114,7 @@ if (0 < ARGUMENTS.length) {
     info.collections = {};
     info.shardsPrimary = {};
     info.zombies = [];
+    info.broken = [];
 
     let allCollections = dump.arango.Plan.Collections;
 
@@ -125,6 +126,12 @@ if (0 < ARGUMENTS.length) {
           info.zombies.push({
             database: dbName,
             cid: cId
+          });
+        } else if (collection.name === undefined && collection.id === undefined) {
+          info.broken.push({
+            database: dbName,
+            cid: cId,
+            collection: collection
           });
         } else {
           let full = dbName + "/" + collection.name;
@@ -239,6 +246,19 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  let printBroken = function(info) {
+    if (0 < info.broken.length) {
+      var table = new AsciiTable('Broken');
+      table.setHeading('Database', 'CID');
+
+      _.each(info.broken, function(zombie) {
+        table.addRow(zombie.database, zombie.cid);
+      });
+      
+      print(table.toString());
+    }
+  };
+
   const info = {};
 
   extractPrimaries(info, dump);
@@ -253,5 +273,7 @@ if (0 < ARGUMENTS.length) {
   printPrimaryShards(info);
   print();
   printZombies(info);
+  print();
+  printBroken(info);
   print();
 }());
