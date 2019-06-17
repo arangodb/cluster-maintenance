@@ -246,6 +246,16 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  let saveZombies = function(info) {
+    let output = [];
+
+    _.each(info.zombies, function(zombie) {
+      output.push({ database: zombie.database, cid: zombie.cid });
+    });
+      
+    fs.write("zombies.json", JSON.stringify(output));
+  };
+
   let printBroken = function(info) {
     if (0 < info.broken.length) {
       var table = new AsciiTable('Broken');
@@ -273,6 +283,7 @@ if (0 < ARGUMENTS.length) {
   printPrimaryShards(info);
   print();
   printZombies(info);
+  saveZombies(info);
   print();
   printBroken(info);
   print();
