@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -u
 
+# usage: analyze.sh DUMP_FILE
+#        analyze.sh AGENCY_ENDPOINT
+
 # The sript requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
 # best effort basis for some systems.
+#
 # If it does not work for you change the `do_resolve` for your system to false.
 # In systems that do not have do_resolve enabled you need to be in the directory
 # in which this script is contained to make it work.
@@ -18,23 +22,54 @@ case "${uname_output}" in
     *)          machine="UNKNOWN:${uname_output}"
 esac
 
-echo "detected os-type $machine -- resolve enabled: $do_resolve"
-
-# the script takes a single argument
-if [[ -z "$*" ]]; then
-    echo "no file provided"
-    exit 1
+if [[ "$do_resolve" == "false" ]]; then
+    echo "detected os-type $machine -- resolve enabled: $do_resolve"
 fi
 
-if $do_resolve; then
-    file_name="$(realpath -s "$(readlink -s -f "$1")")"
-    if [[ -z "$file_name" ]]; then
-        echo "file resolution failed"
+# the script takes a single argument
+declare -a args=()
+
+server_endpoint="none"
+
+while [[ 1 -gt "$#" ]]; do
+    case "$1" in
+        --server.endpoint)
+            server_endpoint=$2
+            shift
+            shift
+            ;;
+        *)
+            args=("$args[@]" "$1")
+            shift
+            ;;
+    esac
+done
+
+case "$1" in
+    http*|ssl*|tcp*)
+        server_endpoint="$1"
+        shift
+        ;;
+esac
+
+if [[ "$server_endpoint" == "none" ]]; then
+    if [[ -z "$*" ]]; then
+        echo "no file provided"
         exit 1
     fi
-    echo "full path of json: $file_name"
+
+    if $do_resolve; then
+        file_name="$(realpath -s "$(readlink -s -f "$1")")"
+        if [[ -z "$file_name" ]]; then
+            echo "file resolution failed"
+            exit 1
+        fi
+        echo "full path of json: $file_name"
+    else
+        file_name="$1"
+    fi
 else
-    file_name="$1"
+    file_name=""
 fi
 
 
@@ -47,6 +82,6 @@ if $do_resolve; then
 fi
 
 arangosh \
-    --server.endpoint none \
+    --server.endpoint $server_endpoint \
     --javascript.execute lib/analyze.js \
     -- "$file_name"
