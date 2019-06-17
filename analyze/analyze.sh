@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -u
 
 # The sript requires an installed version of arangodb or at least a way to call
