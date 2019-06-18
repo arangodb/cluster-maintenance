@@ -22,16 +22,16 @@ if (0 < ARGUMENTS.length) {
       let role = db._version(true).details.role;
 
       if (role === "AGENT") {
-        let dump = arango.POST('/_api/agency/read', [
+        let agency = arango.POST('/_api/agency/read', [
           ["/"]
         ]);
 
-        if (dump.code === 307) {
+        if (agency.code === 307) {
           print("you need to connect to the leader agent");
           return;
         }
 
-        print(JSON.stringify(dump));
+        dump = agency[0];
       } else {
         print("you need to connect to the leader agent, not a " + role);
         return;
