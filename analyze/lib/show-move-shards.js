@@ -173,7 +173,7 @@ if (0 < ARGUMENTS.length) {
 
   let printToDoJobs = function(info) {
     var table = new
-    AsciiTable('Pending');
+    AsciiTable('ToDo (planned)');
     table.setHeading('from', 'to', 'count');
 
     _.each(info.serverToServerToDo, function(froms, to) {
