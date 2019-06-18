@@ -16,7 +16,13 @@ if (0 < ARGUMENTS.length) {
   if (file) {
     print("Using dump file '" + file + "'");
 
-    dump = JSON.parse(fs.read(file)).agency;
+    dump = JSON.parse(fs.read(file));
+
+    if (Array.isArray(dump)) {
+      dump = dump[0];
+    } else {
+      dump = dump.agency;
+    } 
   } else {
     try {
       let role = db._version(true).details.role;
