@@ -27,7 +27,7 @@ if [[ "$do_resolve" == "false" ]]; then
 fi
 
 # the script takes a single argument
-declare -a args=()
+args=""
 
 server_endpoint="none"
 
@@ -39,7 +39,7 @@ while [[ "$#" -gt 1 ]]; do
             shift
             ;;
         *)
-            args=("$args[@]" "$1")
+            args="$args $1"
             shift
             ;;
     esac
@@ -86,4 +86,5 @@ fi
 arangosh \
     --server.endpoint $server_endpoint \
     --javascript.execute lib/analyze.js \
+    $args \
     -- "$file_name"
