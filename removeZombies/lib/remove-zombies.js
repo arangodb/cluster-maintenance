@@ -47,13 +47,22 @@ let file;
       print("removing zombie collection: " + zombie.database + "/" + zombie.cid);
 
       data = {};
-      data['arango/Plan/Collections/' + zombie.database + '/' + zombie.cid] = {
-        'op': 'delete',
-        'old': zombie.data
+      data['/arango/Plan/Collections/' + zombie.database + '/' + zombie.cid] = {
+        'op': 'delete'
       };
 
-      let res = arango.POST('/_api/agency/write', JSON.stringify([[data]]));
-      print("INFO: " + JSON.stringify(res));
+      pre = {};
+      pre['/arango/Plan/Collections/' + zombie.database + '/' + zombie.cid] = {
+        'old': zombie.data
+      };
+      
+      let res = arango.POST('/_api/agency/write', JSON.stringify([[data, pre]]));
+
+      if (res.results[0] === 0) {
+        print("WARNING: pre-condition failed, maybe cleanup already done");
+      } else {
+        print("INFO: " + JSON.stringify(res));
+      }
     } else {
       print("ERROR: corrupted entry in zombie file: " + JSON.stringify(zombie));
     }
