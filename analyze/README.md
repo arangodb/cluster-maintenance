@@ -8,6 +8,13 @@ This will print summaries for
 * Databases
 * Collections
 * Primary Shards
+* Zombie Collections
+
+In case that there are left-over of failed collection creation (zombies), a file
+
+    zombies.json
+
+with details will be generated.
 
 ## creating a dump file
 

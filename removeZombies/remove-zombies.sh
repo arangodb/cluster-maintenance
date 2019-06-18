@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: analyze.sh DUMP_FILE
-#        analyze.sh AGENCY_ENDPOINT
+# usage: remove-zombie.sj AGENCY_ENDPOINT ZOMBIE_FILE
 
 # The sript requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
@@ -54,26 +53,22 @@ if [[ "$#" -gt 0 ]]; then
     esac
 fi
 
-if [[ "$server_endpoint" == "none" ]]; then
-    if [[ -z "$*" ]]; then
-        echo "no file provided"
-        exit 1
-    fi
-
-    if $do_resolve; then
-        file_name="$(realpath -s "$(readlink -s -f "$1")")"
-        if [[ -z "$file_name" ]]; then
-            echo "file resolution failed"
-            exit 1
-        fi
-        echo "full path of json: $file_name"
-    else
-        file_name="$1"
-    fi
-else
-    file_name=""
+if [[ -z "$*" ]]; then
+    echo "usage: $0 --server.endpoint LEADER-AGENT ZOMBIE-FILE"
+    exit 1
 fi
 
+if $do_resolve; then
+    file_name="$(realpath -s "$(readlink -s -f "$1")")"
+
+    if [[ -z "$file_name" ]]; then
+        echo "file resolution failed"
+        exit 1
+    fi
+    echo "full path of json: $file_name"
+else
+    file_name="$1"
+fi
 
 # Try to enter the dir that contains this file as we require to be relative to
 # the lib directory that is also contained in the same directory.
@@ -85,5 +80,5 @@ fi
 
 arangosh \
     --server.endpoint $server_endpoint \
-    --javascript.execute lib/analyze.js \
+    --javascript.execute "lib/$(basename $0 .sh).js" \
     -- "$file_name"

@@ -22,16 +22,16 @@ if (0 < ARGUMENTS.length) {
       let role = db._version(true).details.role;
 
       if (role === "AGENT") {
-        let dump = arango.POST('/_api/agency/read', [
+        let agency = arango.POST('/_api/agency/read', [
           ["/"]
         ]);
 
-        if (dump.code === 307) {
+        if (agency.code === 307) {
           print("you need to connect to the leader agent");
           return;
         }
 
-        print(JSON.stringify(dump));
+        dump = agency[0];
       } else {
         print("you need to connect to the leader agent, not a " + role);
         return;
@@ -125,13 +125,15 @@ if (0 < ARGUMENTS.length) {
         if (collection.name === undefined && collection.id === undefined) {
           info.zombies.push({
             database: dbName,
-            cid: cId
+            cid: cId,
+            data: collection
           });
         } else if (collection.name === undefined || collection.id === undefined) {
           info.broken.push({
             database: dbName,
             cid: cId,
-            collection: collection
+            collection: collection,
+            data: collection
           });
         } else {
           let full = dbName + "/" + collection.name;
@@ -246,6 +248,16 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  let saveZombies = function(info) {
+    let output = [];
+
+    _.each(info.zombies, function(zombie) {
+      output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
+    });
+      
+    fs.write("zombies.json", JSON.stringify(output));
+  };
+
   let printBroken = function(info) {
     if (0 < info.broken.length) {
       var table = new AsciiTable('Broken');
@@ -273,6 +285,7 @@ if (0 < ARGUMENTS.length) {
   printPrimaryShards(info);
   print();
   printZombies(info);
+  saveZombies(info);
   print();
   printBroken(info);
   print();
