@@ -13,7 +13,13 @@ const _ = require('underscore');
 let dump;
 
 if (file) {
-  dump = JSON.parse(fs.read(file)).agency;
+  dump = JSON.parse(fs.read(file));
+
+  if (Array.isArray(dump)) {
+    dump = dump[0];
+  } else {
+    dump = dump.agency;
+  } 
 } else {
   dump = arango.POST('/_api/agency/read', [
     ["/"]
