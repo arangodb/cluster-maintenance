@@ -21,6 +21,7 @@ _.each(shardsToMove, function (shard) {
       
       if (res.error) {
         print("Failed: " + res.errorNum.errorMessage);
+        print(res);
         failed++;
       } else {
         success++;
