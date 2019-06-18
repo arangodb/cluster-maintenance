@@ -125,13 +125,15 @@ if (0 < ARGUMENTS.length) {
         if (collection.name === undefined && collection.id === undefined) {
           info.zombies.push({
             database: dbName,
-            cid: cId
+            cid: cId,
+            data: collection
           });
         } else if (collection.name === undefined || collection.id === undefined) {
           info.broken.push({
             database: dbName,
             cid: cId,
-            collection: collection
+            collection: collection,
+            data: collection
           });
         } else {
           let full = dbName + "/" + collection.name;
@@ -250,7 +252,7 @@ if (0 < ARGUMENTS.length) {
     let output = [];
 
     _.each(info.zombies, function(zombie) {
-      output.push({ database: zombie.database, cid: zombie.cid });
+      output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
     });
       
     fs.write("zombies.json", JSON.stringify(output));

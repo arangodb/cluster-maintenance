@@ -31,7 +31,7 @@ declare -a args=()
 
 server_endpoint="none"
 
-while [[ 1 -gt "$#" ]]; do
+while [[ "$#" -gt 1 ]]; do
     case "$1" in
         --server.endpoint)
             server_endpoint=$2
@@ -45,12 +45,14 @@ while [[ 1 -gt "$#" ]]; do
     esac
 done
 
-case "$1" in
-    http*|ssl*|tcp*)
-        server_endpoint="$1"
-        shift
-        ;;
-esac
+if [[ "$#" -gt 0 ]]; then
+    case "$1" in
+        http*|ssl*|tcp*)
+            server_endpoint="$1"
+            shift
+            ;;
+    esac
+fi
 
 if [[ "$server_endpoint" == "none" ]]; then
     if [[ -z "$*" ]]; then
