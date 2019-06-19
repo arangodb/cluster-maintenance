@@ -204,6 +204,143 @@ if (0 < ARGUMENTS.length) {
     });
   };
 
+  const extractCollectionIntegrity = (info, dump) => {
+    const planCollections = dump.arango.Plan.Collections;
+    const planDBs = dump.arango.Plan.Databases;
+    info.noPlanDatabases = [];
+    info.noShardCollections = [];
+    info.realLeaderMissing = [];
+    info.leaderOnDeadServer = [];
+    info.followerOnDeadServer = [];
+    info.shardOnServerToCleanout = [];
+    for (const [db, collections] of Object.entries(planCollections)) {
+      if (!planDBs.hasOwnProperty(db)) {
+        // This database has Collections but is deleted.
+        info.noPlanDatabases.push(db);
+        continue;
+      }
+      for (const [name, col] of Object.entries(collections)) {
+        const { shards, distributeShardsLike } = col;
+        if (!shards || Object.keys(shards).length !== 0 && shards.constructor !== Object) {
+
+          // We do not have shards
+          info.noShardCollections.push({db, name});
+          continue;
+        }
+        if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
+          // The prototype is missing
+          info.realLeaderMissing.push({db, name, distributeShardsLike});
+        }
+        for (const [shard, servers] of Object.entries(shards)) {
+          for (let i = 0; i < servers.length; ++i) {
+            if (!info.primaries.hasOwnProperty(servers[i])) {
+              if (i == 0) {
+                info.leaderOnDeadServer.push({db, name, shard, server: servers[i], servers});
+              } else {
+                info.followerOnDeadServer.push({db, name, shard, server: servers[i], servers});
+              }
+            }
+            // FIXME!
+            if (shards[i] === "PRMR-ep0kv1ux") {
+              info.shardOnServerToCleanout.push({db, name, shard, server: "PRMR-ep0kv1ux", servers});
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const printCollectionIntegrity = (info) => {
+    const {
+      noPlanDatabases,
+      noShardCollections,
+      realLeaderMissing,
+      leaderOnDeadServer,
+      followerOnDeadServer,
+      shardOnServerToCleanout
+    } = info;
+
+    if (noPlanDatabases.length > 0) {
+      const table = new AsciiTable('Deleted Databases with leftover Collections');
+      table.setHeading('Database');
+      for (const d of noPlanDatabases) {
+        table.addRow(d);
+      }
+      print(table.toString());
+    }
+
+    if (noShardCollections.length > 0) {
+      const table = new AsciiTable('Collections without shards');
+      table.setHeading('Database', 'CID');
+      for (const d of noShardCollections) {
+        table.addRow(d.db, d.name);
+      }
+      print(table.toString());
+    }
+
+    if (realLeaderMissing.length > 0) {
+      const table = new AsciiTable('Real Leader missing for collection');
+      table.setHeading('Database', 'CID', 'LeaderCID');
+      for (const d of realLeaderMissing) {
+        table.addRow(d.db, d.name, d.distributeShardsLike);
+      }
+      print(table.toString());
+    }
+
+    if (leaderOnDeadServer.length > 0) {
+      const table = new AsciiTable('Leader on Failed DBServer');
+      table.setHeading('Database', 'CID', 'Shard', 'Failed DBServer', 'All Servers');
+      for (const d of leaderOnDeadServer) {
+        table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
+      }
+      print(table.toString());
+    }
+
+    if (followerOnDeadServer.length > 0) {
+      const table = new AsciiTable('Follower on Failed DBServer');
+      table.setHeading('Database', 'CID', 'Shard', 'Failed DBServer', 'All Servers');
+      for (const d of followerOnDeadServer) {
+        table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
+      }
+      print(table.toString());
+    }
+
+    if (shardOnServerToCleanout.length > 0) {
+      const table = new AsciiTable('Follower on Server to cleanout');
+      table.setHeading('Database', 'CID', 'Shard', 'DBServer to clean', 'All Servers');
+      for (const d of shardOnServerToCleanout) {
+        table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
+      }
+      print(table.toString());
+    }
+  };
+
+  const saveCollectionIntegrity = (info) => {
+    const {
+      noPlanDatabases,
+      noShardCollections,
+      realLeaderMissing,
+      leaderOnDeadServer,
+      followerOnDeadServer,
+      shardOnServerToCleanout
+    } = info;
+    if (noPlanDatabases.length > 0 ||
+      noShardCollections.length > 0 ||
+      realLeaderMissing.length > 0 ||
+      leaderOnDeadServer.length > 0 ||
+      followerOnDeadServer.length > 0 ||
+      shardOnServerToCleanout.length > 0) {
+      fs.write("collectionIntegrity.json", JSON.stringify({
+        noPlanDatabases,
+        noShardCollections,
+        realLeaderMissing,
+        leaderOnDeadServer,
+        followerOnDeadServer,
+        shardOnServerToCleanout
+      }));
+    }
+  };
+
   let printDatabases = function(info) {
     var table = new AsciiTable('Databases');
     table.setHeading('', 'collections', 'shards', 'leaders', 'followers', 'Real-Leaders');
@@ -284,6 +421,9 @@ if (0 < ARGUMENTS.length) {
   print();
 
   extractDatabases(info, dump);
+  extractCollectionIntegrity(info, dump);
+
+  /*
   printDatabases(info);
   print();
   printCollections(info);
@@ -294,5 +434,9 @@ if (0 < ARGUMENTS.length) {
   saveZombies(info);
   print();
   printBroken(info);
+  print();
+  */
+  printCollectionIntegrity(info);
+  saveCollectionIntegrity(info);
   print();
 }());
