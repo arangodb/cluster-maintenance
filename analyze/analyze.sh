@@ -28,7 +28,6 @@ fi
 
 # the script takes a single argument
 args=""
-
 server_endpoint="none"
 
 while [[ "$#" -gt 1 ]]; do
@@ -85,6 +84,6 @@ fi
 
 arangosh \
     --server.endpoint $server_endpoint \
-    --javascript.execute lib/analyze.js \
+    --javascript.execute "lib/$(basename $0 .sh).js" \
     $args \
     -- "$file_name"

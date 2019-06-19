@@ -277,6 +277,47 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  let extractCurrentDatabasesDeadPrimaries = function(info, dump) {
+    let databases = [];
+
+    _.each(dump.arango.Current.Databases, function(database, name) {
+      _.each(database, function(primary, pname) {
+        if (!info.primaries.hasOwnProperty(pname)) {
+          databases.push({
+            database: name,
+            primary: pname,
+            data: primary
+          });
+        }
+      });
+    });
+
+    info.databasesDeadPrimaries = databases;
+  };
+
+  let printCurrentDatabasesDeadPrimaries = function(info) {
+    if (0 < info.databasesDeadPrimaries.length) {
+      var table = new AsciiTable('Dead Primaries in Current');
+      table.setHeading('Database', 'Primary');
+
+      _.each(info.databasesDeadPrimaries, function(zombie) {
+        table.addRow(zombie.database, zombie.primary);
+      });
+      
+      print(table.toString());
+    }
+  };
+
+  let saveCurrentDatabasesDeadPrimaries = function(info) {
+    let output = [];
+
+    _.each(info.databasesDeadPrimaries, function(zombie) {
+      output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
+    });
+      
+    fs.write("dead-primaries.json", JSON.stringify(output));
+  };
+
   const info = {};
 
   extractPrimaries(info, dump);
@@ -294,5 +335,10 @@ if (0 < ARGUMENTS.length) {
   saveZombies(info);
   print();
   printBroken(info);
+  print();
+
+  extractCurrentDatabasesDeadPrimaries(info, dump);
+  printCurrentDatabasesDeadPrimaries(info);
+  saveCurrentDatabasesDeadPrimaries(info);
   print();
 }());
