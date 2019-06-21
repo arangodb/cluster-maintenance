@@ -1,5 +1,13 @@
 # Usage
 
-    ./remove-zombies.sh --server.ask-jwt-secret --server.endpoint tcp://AGENCY_HEOST:AGENCY_PORT ./analyze/zombies.json 
+## Remove Zombies Script
 
-You need to connect to the **leading** agent.
+    ./remove-zombies.sh --server.ask-jwt-secret --server.endpoint tcp://LEAD_AGENT:LEAD_AGENT_PORT ../analyze/zombies.json 
+
+You need to connect to the **leading** agent. Use *ssl* in the *endpoint* instead of *tcp* if you are using SSL.
+
+## Remove Dead-Primaries Script
+
+    ./remove-dead-primaries.sh --server.ask-jwt-secret --server.endpoint tcp://LEAD_AGENT:LEAD_AGENT_PORT ../analyze/dead-primaries.json
+
+You need to connect to the **leading** agent. Use *ssl* in the *endpoint* instead of *tcp* if you are using SSL.
