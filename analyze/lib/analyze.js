@@ -212,25 +212,25 @@ if (0 < ARGUMENTS.length) {
     info.realLeaderMissing = [];
     info.leaderOnDeadServer = [];
     info.followerOnDeadServer = [];
-    info.shardOnServerToCleanout = [];
     for (const [db, collections] of Object.entries(planCollections)) {
       if (!planDBs.hasOwnProperty(db)) {
         // This database has Collections but is deleted.
-        info.noPlanDatabases.push(db);
+        info.noPlanDatabases.push(db, collections);
         continue;
       }
       for (const [name, col] of Object.entries(collections)) {
-        const { shards, distributeShardsLike } = col;
-        if (!shards || Object.keys(shards).length !== 0 && shards.constructor !== Object) {
-
+        const { shards, distributeShardsLike, isSmart } = col;
+        if (!shards || (Object.keys(shards).length === 0 && !isSmart) || shards.constructor !== Object) {
           // We do not have shards
-          info.noShardCollections.push({db, name});
+          info.noShardCollections.push({db, name, col});
           continue;
         }
+
         if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
           // The prototype is missing
-          info.realLeaderMissing.push({db, name, distributeShardsLike});
+          info.realLeaderMissing.push({db, name, distributeShardsLike, col});
         }
+
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
             if (!info.primaries.hasOwnProperty(servers[i])) {
@@ -239,10 +239,6 @@ if (0 < ARGUMENTS.length) {
               } else {
                 info.followerOnDeadServer.push({db, name, shard, server: servers[i], servers});
               }
-            }
-            // FIXME!
-            if (shards[i] === "PRMR-ep0kv1ux") {
-              info.shardOnServerToCleanout.push({db, name, shard, server: "PRMR-ep0kv1ux", servers});
             }
           }
         }
@@ -256,8 +252,7 @@ if (0 < ARGUMENTS.length) {
       noShardCollections,
       realLeaderMissing,
       leaderOnDeadServer,
-      followerOnDeadServer,
-      shardOnServerToCleanout
+      followerOnDeadServer
     } = info;
 
     if (noPlanDatabases.length > 0) {
@@ -305,14 +300,6 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
     }
 
-    if (shardOnServerToCleanout.length > 0) {
-      const table = new AsciiTable('Follower on Server to cleanout');
-      table.setHeading('Database', 'CID', 'Shard', 'DBServer to clean', 'All Servers');
-      for (const d of shardOnServerToCleanout) {
-        table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
-      }
-      print(table.toString());
-    }
   };
 
   const saveCollectionIntegrity = (info) => {
@@ -321,22 +308,19 @@ if (0 < ARGUMENTS.length) {
       noShardCollections,
       realLeaderMissing,
       leaderOnDeadServer,
-      followerOnDeadServer,
-      shardOnServerToCleanout
+      followerOnDeadServer
     } = info;
     if (noPlanDatabases.length > 0 ||
       noShardCollections.length > 0 ||
       realLeaderMissing.length > 0 ||
       leaderOnDeadServer.length > 0 ||
-      followerOnDeadServer.length > 0 ||
-      shardOnServerToCleanout.length > 0) {
+      followerOnDeadServer.length > 0) {
       fs.write("collectionIntegrity.json", JSON.stringify({
         noPlanDatabases,
         noShardCollections,
         realLeaderMissing,
         leaderOnDeadServer,
-        followerOnDeadServer,
-        shardOnServerToCleanout
+        followerOnDeadServer
       }));
     }
   };
@@ -414,16 +398,59 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  let extractCurrentDatabasesDeadPrimaries = function(info, dump) {
+    let databases = [];
+
+    _.each(dump.arango.Current.Databases, function(database, name) {
+      _.each(database, function(primary, pname) {
+        if (!info.primaries.hasOwnProperty(pname)) {
+          databases.push({
+            database: name,
+            primary: pname,
+            data: primary
+          });
+        }
+      });
+    });
+
+    info.databasesDeadPrimaries = databases;
+  };
+
+  let printCurrentDatabasesDeadPrimaries = function(info) {
+    if (0 < info.databasesDeadPrimaries.length) {
+      var table = new AsciiTable('Dead Primaries in Current');
+      table.setHeading('Database', 'Primary');
+
+      _.each(info.databasesDeadPrimaries, function(zombie) {
+        table.addRow(zombie.database, zombie.primary);
+      });
+      
+      print(table.toString());
+    }
+  };
+
+  let saveCurrentDatabasesDeadPrimaries = function(info) {
+    let output = [];
+
+    _.each(info.databasesDeadPrimaries, function(zombie) {
+      output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
+    });
+      
+    fs.write("dead-primaries.json", JSON.stringify(output));
+  };
+
   const info = {};
 
-  extractPrimaries(info, dump);
-  printPrimaries(info);
-  print();
 
+  // extract info
+  extractPrimaries(info, dump);
   extractDatabases(info, dump);
   extractCollectionIntegrity(info, dump);
+  extractCurrentDatabasesDeadPrimaries(info, dump);
 
-  /*
+  // Print funny tables
+  printPrimaries(info);
+  print();
   printDatabases(info);
   print();
   printCollections(info);
@@ -431,12 +458,16 @@ if (0 < ARGUMENTS.length) {
   printPrimaryShards(info);
   print();
   printZombies(info);
-  saveZombies(info);
   print();
   printBroken(info);
   print();
-  */
   printCollectionIntegrity(info);
-  saveCollectionIntegrity(info);
   print();
+  printCurrentDatabasesDeadPrimaries(info);
+  print();
+
+  // Save to files
+  saveCollectionIntegrity(info);
+  saveZombies(info);
+  saveCurrentDatabasesDeadPrimaries(info);
 }());

@@ -26,11 +26,10 @@ if [[ "$do_resolve" == "false" ]]; then
 fi
 
 # the script takes a single argument
-declare -a args=()
-
+args=""
 server_endpoint="none"
 
-while [[ "$#" -gt 1 ]]; do
+while [[ "$#" -gt 2 ]]; do
     case "$1" in
         --server.endpoint)
             server_endpoint=$2
@@ -38,7 +37,7 @@ while [[ "$#" -gt 1 ]]; do
             shift
             ;;
         *)
-            args=("$args[@]" "$1")
+            args="$args $1"
             shift
             ;;
     esac
@@ -54,7 +53,7 @@ if [[ "$#" -gt 0 ]]; then
 fi
 
 if [[ -z "$*" ]]; then
-    echo "usage: $0 --server.endpoint LEADER-AGENT ZOMBIE-FILE"
+    echo "usage: $0 --server.endpoint LEADER-AGENT INPUT-FILE"
     exit 1
 fi
 
@@ -81,4 +80,5 @@ fi
 arangosh \
     --server.endpoint $server_endpoint \
     --javascript.execute "lib/$(basename $0 .sh).js" \
+    $args \
     -- "$file_name"
