@@ -5,7 +5,7 @@ if (0 < ARGUMENTS.length) {
 }
 
 ;
-(function() {
+(function () {
   // imports
   const fs = require('fs');
   const _ = require('underscore');
@@ -22,7 +22,7 @@ if (0 < ARGUMENTS.length) {
       dump = dump[0];
     } else {
       dump = dump.agency;
-    } 
+    }
   } else {
     try {
       let role = db._version(true).details.role;
@@ -48,13 +48,13 @@ if (0 < ARGUMENTS.length) {
     }
   }
 
-  let extractPrimaries = function(info, dump) {
+  let extractPrimaries = function (info, dump) {
     let primariesAll = {};
     let primaries = {};
 
     const health = dump.arango.Supervision.Health;
 
-    _.each(health, function(server, key) {
+    _.each(health, function (server, key) {
       if (key.substring(0, 4) === 'PRMR') {
         primariesAll[key] = server;
 
@@ -68,18 +68,18 @@ if (0 < ARGUMENTS.length) {
     info.primariesAll = primariesAll;
   };
 
-  let printPrimaries = function(info) {
+  let printPrimaries = function (info) {
     var table = new AsciiTable('Primaries');
     table.setHeading('', 'status');
 
-    _.each(info.primariesAll, function(server, name) {
+    _.each(info.primariesAll, function (server, name) {
       table.addRow(name, server.Status);
     });
 
     print(table.toString());
   };
 
-  let setGlobalShard = function(info, shard) {
+  let setGlobalShard = function (info, shard) {
     let dbServer = shard.dbServer;
     let isLeader = shard.isLeader;
 
@@ -102,10 +102,10 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
-  let extractDatabases = function(info, dump) {
+  let extractDatabases = function (info, dump) {
     let databases = {};
 
-    _.each(dump.arango.Plan.Databases, function(database, name) {
+    _.each(dump.arango.Plan.Databases, function (database, name) {
       databases[name] = _.extend({
         collections: [],
         shards: [],
@@ -124,10 +124,10 @@ if (0 < ARGUMENTS.length) {
 
     let allCollections = dump.arango.Plan.Collections;
 
-    _.each(allCollections, function(collections, dbName) {
+    _.each(allCollections, function (collections, dbName) {
       let database = databases[dbName];
 
-      _.each(collections, function(collection, cId) {
+      _.each(collections, function (collection, cId) {
         if (collection.name === undefined && collection.id === undefined) {
           info.zombies.push({
             database: dbName,
@@ -150,7 +150,8 @@ if (0 < ARGUMENTS.length) {
             numberOfShards: collection.numberOfShards,
             replicationFactor: collection.replicationFactor,
             isSmart: collection.isSmart,
-            type: collection.type
+            type: collection.type,
+            id: cId
           };
 
           database.collections.push(coll);
@@ -160,7 +161,7 @@ if (0 < ARGUMENTS.length) {
           coll.leaders = [];
           coll.followers = [];
 
-          _.each(collection.shards, function(shard, sName) {
+          _.each(collection.shards, function (shard, sName) {
             coll.shards.push(shard);
 
             let s = {
@@ -222,22 +223,22 @@ if (0 < ARGUMENTS.length) {
         const { shards, distributeShardsLike, isSmart } = col;
         if (!shards || (Object.keys(shards).length === 0 && !isSmart) || shards.constructor !== Object) {
           // We do not have shards
-          info.noShardCollections.push({db, name, col});
+          info.noShardCollections.push({ db, name, col });
           continue;
         }
 
         if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
           // The prototype is missing
-          info.realLeaderMissing.push({db, name, distributeShardsLike, col});
+          info.realLeaderMissing.push({ db, name, distributeShardsLike, col });
         }
 
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
             if (!info.primaries.hasOwnProperty(servers[i])) {
               if (i == 0) {
-                info.leaderOnDeadServer.push({db, name, shard, server: servers[i], servers});
+                info.leaderOnDeadServer.push({ db, name, shard, server: servers[i], servers });
               } else {
-                info.followerOnDeadServer.push({db, name, shard, server: servers[i], servers});
+                info.followerOnDeadServer.push({ db, name, shard, server: servers[i], servers });
               }
             }
           }
@@ -325,11 +326,11 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
-  let printDatabases = function(info) {
+  let printDatabases = function (info) {
     var table = new AsciiTable('Databases');
     table.setHeading('', 'collections', 'shards', 'leaders', 'followers', 'Real-Leaders');
 
-    _.each(_.sortBy(info.databases, x => x.name), function(database, name) {
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
       table.addRow(database.name, database.collections.length, database.shards.length,
         database.leaders.length, database.followers.length,
         database.realLeaders.length);
@@ -338,71 +339,74 @@ if (0 < ARGUMENTS.length) {
     print(table.toString());
   };
 
-  let printCollections = function(info) {
+  let printCollections = function (info) {
     var table = new AsciiTable('collections');
-    table.setHeading('', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
+    table.setHeading('', 'CID', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
 
-    _.each(_.sortBy(info.collections, x => x.fullName), function(collection, name) {
-      table.addRow(collection.fullName, collection.replicationFactor,
+    _.each(_.sortBy(info.collections, x => x.fullName), function (collection, name) {
+
+      table.addRow(collection.fullName, collection.id, collection.replicationFactor,
         collection.distributeShardsLike, collection.numberOfShards,
         collection.type, collection.isSmart);
     });
 
     print(table.toString());
+
+
   };
 
-  let printPrimaryShards = function(info) {
+  let printPrimaryShards = function (info) {
     var table = new AsciiTable('Primary Shards');
     table.setHeading('', 'Leaders', 'Followers', 'Real Leaders');
 
-    _.each(info.shardsPrimary, function(shards, dbServer) {
+    _.each(info.shardsPrimary, function (shards, dbServer) {
       table.addRow(dbServer, shards.leaders.length, shards.followers.length, shards.realLeaders.length);
     });
 
     print(table.toString());
   };
 
-  let printZombies = function(info) {
+  let printZombies = function (info) {
     if (0 < info.zombies.length) {
       var table = new AsciiTable('Zombies');
       table.setHeading('Database', 'CID');
 
-      _.each(info.zombies, function(zombie) {
+      _.each(info.zombies, function (zombie) {
         table.addRow(zombie.database, zombie.cid);
       });
-      
+
       print(table.toString());
     }
   };
 
-  let saveZombies = function(info) {
+  let saveZombies = function (info) {
     let output = [];
 
-    _.each(info.zombies, function(zombie) {
+    _.each(info.zombies, function (zombie) {
       output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
     });
-      
+
     fs.write("zombies.json", JSON.stringify(output));
   };
 
-  let printBroken = function(info) {
+  let printBroken = function (info) {
     if (0 < info.broken.length) {
       var table = new AsciiTable('Broken');
       table.setHeading('Database', 'CID');
 
-      _.each(info.broken, function(zombie) {
+      _.each(info.broken, function (zombie) {
         table.addRow(zombie.database, zombie.cid);
       });
-      
+
       print(table.toString());
     }
   };
 
-  let extractCurrentDatabasesDeadPrimaries = function(info, dump) {
+  let extractCurrentDatabasesDeadPrimaries = function (info, dump) {
     let databases = [];
 
-    _.each(dump.arango.Current.Databases, function(database, name) {
-      _.each(database, function(primary, pname) {
+    _.each(dump.arango.Current.Databases, function (database, name) {
+      _.each(database, function (primary, pname) {
         if (!info.primaries.hasOwnProperty(pname)) {
           databases.push({
             database: name,
@@ -416,26 +420,26 @@ if (0 < ARGUMENTS.length) {
     info.databasesDeadPrimaries = databases;
   };
 
-  let printCurrentDatabasesDeadPrimaries = function(info) {
+  let printCurrentDatabasesDeadPrimaries = function (info) {
     if (0 < info.databasesDeadPrimaries.length) {
       var table = new AsciiTable('Dead Primaries in Current');
       table.setHeading('Database', 'Primary');
 
-      _.each(info.databasesDeadPrimaries, function(zombie) {
+      _.each(info.databasesDeadPrimaries, function (zombie) {
         table.addRow(zombie.database, zombie.primary);
       });
-      
+
       print(table.toString());
     }
   };
 
-  let saveCurrentDatabasesDeadPrimaries = function(info) {
+  let saveCurrentDatabasesDeadPrimaries = function (info) {
     let output = [];
 
-    _.each(info.databasesDeadPrimaries, function(zombie) {
+    _.each(info.databasesDeadPrimaries, function (zombie) {
       output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
     });
-      
+
     fs.write("dead-primaries.json", JSON.stringify(output));
   };
 
