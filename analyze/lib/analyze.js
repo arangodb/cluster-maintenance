@@ -255,7 +255,7 @@ if (0 < ARGUMENTS.length) {
       leaderOnDeadServer,
       followerOnDeadServer
     } = info;
-
+    let infected = false;
     if (noPlanDatabases.length > 0) {
       const table = new AsciiTable('Deleted Databases with leftover Collections');
       table.setHeading('Database');
@@ -263,6 +263,9 @@ if (0 < ARGUMENTS.length) {
         table.addRow(d);
       }
       print(table.toString());
+      infected = true;
+    } else {
+      print('You cluster is not infected by leftover Collections');
     }
 
     if (noShardCollections.length > 0) {
@@ -272,6 +275,9 @@ if (0 < ARGUMENTS.length) {
         table.addRow(d.db, d.name);
       }
       print(table.toString());
+      infected = true;
+    } else {
+      print('You cluster is not infected by collections without shards');
     }
 
     if (realLeaderMissing.length > 0) {
@@ -281,6 +287,9 @@ if (0 < ARGUMENTS.length) {
         table.addRow(d.db, d.name, d.distributeShardsLike);
       }
       print(table.toString());
+      infected = true;
+    } else {
+      print('You cluster is not infected by missing distributeShardsLike Leaders');
     }
 
     if (leaderOnDeadServer.length > 0) {
@@ -290,6 +299,9 @@ if (0 < ARGUMENTS.length) {
         table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
       }
       print(table.toString());
+      infected = true;
+    } else {
+      print('You cluster is not infected by leaders on failed DBServer');
     }
 
     if (followerOnDeadServer.length > 0) {
@@ -299,8 +311,11 @@ if (0 < ARGUMENTS.length) {
         table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
       }
       print(table.toString());
+      infected = true;
+    } else {
+      print('You cluster is not infected by followers on failed DBServer');
     }
-
+    return infected;
   };
 
   const saveCollectionIntegrity = (info) => {
@@ -337,6 +352,7 @@ if (0 < ARGUMENTS.length) {
     });
 
     print(table.toString());
+    return false;
   };
 
   let printCollections = function (info) {
@@ -344,15 +360,12 @@ if (0 < ARGUMENTS.length) {
     table.setHeading('', 'CID', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
 
     _.each(_.sortBy(info.collections, x => x.fullName), function (collection, name) {
-
       table.addRow(collection.fullName, collection.id, collection.replicationFactor,
         collection.distributeShardsLike, collection.numberOfShards,
         collection.type, collection.isSmart);
     });
-
     print(table.toString());
-
-
+    return false;
   };
 
   let printPrimaryShards = function (info) {
@@ -364,6 +377,7 @@ if (0 < ARGUMENTS.length) {
     });
 
     print(table.toString());
+    return false;
   };
 
   let printZombies = function (info) {
@@ -376,17 +390,26 @@ if (0 < ARGUMENTS.length) {
       });
 
       print(table.toString());
+      return true;
+    } else {
+      print('You cluster is not infected by Zombies');
+      return false
     }
   };
 
   let saveZombies = function (info) {
-    let output = [];
+    if (info.zombies.length > 0) {
+      let output = [];
 
-    _.each(info.zombies, function (zombie) {
-      output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
-    });
+      _.each(info.zombies, function (zombie) {
+        output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
+      });
 
-    fs.write("zombies.json", JSON.stringify(output));
+      fs.write("zombies.json", JSON.stringify(output));
+
+      print("To remove Zombies infection please run the following command:");
+      print(`./cleanup/remove-zombies.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('zombies.json')}`);
+    }
   };
 
   let printBroken = function (info) {
@@ -399,6 +422,10 @@ if (0 < ARGUMENTS.length) {
       });
 
       print(table.toString());
+      return true;
+    } else {
+      print('You cluster is not infected by Broken collections');
+      return false
     }
   };
 
@@ -430,17 +457,25 @@ if (0 < ARGUMENTS.length) {
       });
 
       print(table.toString());
+      return true;
+    } else {
+      print('Your cluster is not infected by Dead Primaries');
+      return false;
     }
   };
 
   let saveCurrentDatabasesDeadPrimaries = function (info) {
-    let output = [];
+    if (info.databasesDeadPrimaries.length > 0) {
+      let output = [];
 
-    _.each(info.databasesDeadPrimaries, function (zombie) {
-      output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
-    });
+      _.each(info.databasesDeadPrimaries, function (zombie) {
+        output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
+      });
 
-    fs.write("dead-primaries.json", JSON.stringify(output));
+      fs.write("dead-primaries.json", JSON.stringify(output));
+      print("To remove Dear Primaries infection please run the following command:");
+      print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
+    }
   };
 
   const info = {};
@@ -451,27 +486,32 @@ if (0 < ARGUMENTS.length) {
   extractDatabases(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
-
+  let infected = false;
   // Print funny tables
-  printPrimaries(info);
+  infected = printPrimaries(info) || infected;
   print();
-  printDatabases(info);
+  infected = printDatabases(info) || infected;
   print();
-  printCollections(info);
+  infected = printCollections(info) || infected;
   print();
-  printPrimaryShards(info);
+  infected = printPrimaryShards(info) || infected;
   print();
-  printZombies(info);
+  infected = printZombies(info) || infected;
   print();
-  printBroken(info);
+  infected = printBroken(info) || infected;
   print();
-  printCollectionIntegrity(info);
+  infected = printCollectionIntegrity(info) || infected;
   print();
-  printCurrentDatabasesDeadPrimaries(info);
+  infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   print();
 
-  // Save to files
-  saveCollectionIntegrity(info);
-  saveZombies(info);
-  saveCurrentDatabasesDeadPrimaries(info);
+  if (infected) {
+    // Save to files
+    saveCollectionIntegrity(info);
+    saveZombies(info);
+    saveCurrentDatabasesDeadPrimaries(info);
+  } else {
+    print('Did not detect any infection in your cluster');
+  }
+
 }());
