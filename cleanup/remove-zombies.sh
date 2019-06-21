@@ -58,7 +58,7 @@ if [[ -z "$*" ]]; then
 fi
 
 if $do_resolve; then
-    file_name="$(realpath -s "$(readlink -s -f "$1")")"
+    file_name="$(realpath "$(readlink -s -f "$1")")"
 
     if [[ -z "$file_name" ]]; then
         echo "file resolution failed"
@@ -72,7 +72,7 @@ fi
 # Try to enter the dir that contains this file as we require to be relative to
 # the lib directory that is also contained in the same directory.
 if $do_resolve; then
-    script_dir="$(realpath -s "$(dirname "$(readlink -s -f "${BASH_SOURCE[0]}")")")"
+    script_dir="$(realpath "$(dirname "$(readlink -s -f "${BASH_SOURCE[0]}")")")"
     cd "$script_dir" || { echo "failed to change into binary dir $script_dir"; exit 1; }
     echo "$script_dir"
 fi
