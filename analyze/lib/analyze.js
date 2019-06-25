@@ -102,6 +102,31 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
+  const recursiveMapPrinter = (map) => {
+    if (map instanceof Map) {
+      const res = {}
+      for (let [k,v] of map) {
+        res[k] = recursiveMapPrinter(v);
+      }
+      return res;
+    } else if (map instanceof Array) {
+      return map.map(v => recursiveMapPrinter(v));
+    } else if (map instanceof Object) {
+      const res = {}
+      for (let [k,v] of Object.entries(map)) {
+        res[k] = recursiveMapPrinter(v);
+      }
+      return res;
+    } else if (map instanceof Set) {
+      const res = [];
+      for (let v of map.values()) {
+        res.push(recursiveMapPrinter(v));
+      }
+      return res;
+    }
+    return map;
+  };
+
   let extractDatabases = function (info, dump) {
     let databases = {};
 
@@ -213,6 +238,7 @@ if (0 < ARGUMENTS.length) {
     info.realLeaderMissing = [];
     info.leaderOnDeadServer = [];
     info.followerOnDeadServer = [];
+
     for (const [db, collections] of Object.entries(planCollections)) {
       if (!planDBs.hasOwnProperty(db)) {
         // This database has Collections but is deleted.
@@ -230,7 +256,7 @@ if (0 < ARGUMENTS.length) {
         if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
           // The prototype is missing
           info.realLeaderMissing.push({ db, name, distributeShardsLike, col });
-        }
+        }     
 
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
@@ -244,6 +270,148 @@ if (0 < ARGUMENTS.length) {
           }
         }
       }
+    }
+  };
+
+  const extractDistributionGroups = (info, dump) => {
+    const planCollections = dump.arango.Plan.Collections;
+    const currentCollections = dump.arango.Current.Collections;
+    /*
+    * realLeaderCid => {
+    *   plan => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }],
+    *   current => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }],
+    *   db = dbName
+    * }
+    */
+    const shardGroups = new Map();
+    // real leader cid
+    const violatedDistShardLike = new Set();
+    // {cid, shard, search}
+    const noInsyncFollower = new Set();
+    // {cid, shard, search}
+    const unplannedLeader = new Set();
+    // {cid, shard, search}
+    const noInsyncAndDeadLeader = new Set();
+    for (const [db, collections] of Object.entries(planCollections)) {
+      for (const [cid, col] of Object.entries(collections)) {
+        const { shards, distributeShardsLike } = col;
+        if (!shards || Object.keys(shards).length === 0 || shards.constructor !== Object) {
+          // We do not have shards
+          continue;
+        }
+        // If we have DistLike we search for it, otherwise we are leader
+        const search = distributeShardsLike || cid;
+        const isNewEntry = !shardGroups.has(search);
+        if (isNewEntry) {
+          shardGroups.set(search, {
+            plan: new Map(),
+            current: new Map(),
+            db
+          });
+        }
+        // Every group is a object of
+        // plan => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }]
+        // current => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }]
+        const group = shardGroups.get(search);
+        const myPlan = [];
+        const myCurrent = [];
+        for (const [shard, servers] of Object.entries(shards)) {
+          const curServers = currentCollections[db][cid][shard].servers;
+          myPlan.push({shard, servers})
+          myCurrent.push({shard, servers: curServers})
+          if (curServers[0] !== servers[0]) {
+            unplannedLeader.add({cid, shard, search});
+          }
+          if (servers.length > 1 && curServers.length <= 1) {
+            noInsyncFollower.add({cid, shard, search});
+            if (!info.primaries.hasOwnProperty(curServers[0])) {
+              noInsyncAndDeadLeader.add({cid, shard, search});
+            }
+          }
+        }
+
+        myPlan.sort((l, r) => l.shard > r.shard);
+        myCurrent.sort((l, r) => l.shard > r.shard);
+
+        if (!isNewEntry) {
+          // Pick any of the existing, they need to be all equal, or at least one needs to be reported
+          print(JSON.stringify(group.plan));
+          const comp = group.plan.values().next().value;
+          for (let i = 0; i < comp.length; ++i) {
+            if (comp[i] !== myPlan[i]) {
+              // We have at least one mismatch of plans that violate distribution
+              violatedDistShardLike.add(search);
+              break;
+            }
+          }
+        }
+        group.plan.set(cid, myPlan);
+        group.current.set(cid, myCurrent);
+      }
+    }
+
+    info.shardGroups = shardGroups;
+    info.violatedDistShardLike = violatedDistShardLike;
+    info.noInsyncFollower = noInsyncFollower;
+    info.unplannedLeader = unplannedLeader;
+    info.noInsyncAndDeadLeader = noInsyncAndDeadLeader;
+  };
+
+  const printDistributionGroups = (info) => {
+    const { noInsyncAndDeadLeader } = info;
+    let infected = false;
+    if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
+      const table = new AsciiTable('Collections with deadLeader and no-insync Follower');
+      table.setHeading('CID', 'Shard', 'DistributeLike');
+      for (const {cid, shard, search} of noInsyncAndDeadLeader) {
+          table.addRow(cid, shard, search);
+      }
+      print(table.toString());
+      infected = true;
+    }
+    return infected;
+  };
+
+  const saveDistributionGroups = (info) => {
+    const { noInsyncAndDeadLeader, shardGroups, primaries } = info;
+    if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
+      const clonedGroups = new Map();
+      for (const {cid, shard, search} of noInsyncAndDeadLeader) {
+        // candidates: server => [insyncShard]
+        const candidates = new Map();
+
+        const group = shardGroups.get(search);
+        const myPlan = group.plan.get(cid);
+        const shardIndex = myPlan.findIndex(s => s.shard === shard);
+        const allShards = [];
+        for (const s of myPlan[shardIndex].servers) {
+          if (primaries.hasOwnProperty(s)) {
+            // This primary is alive, let us check
+            candidates.set(s, []);
+          }
+        }
+        // Iterate over all current distributions on shardIndex, and if we find an insync follower
+        // note it to the candidates
+        for (const [cid, curServers] of group.current) {
+          const { shard, servers} = curServers[shardIndex];
+          allShards.push(shard);
+          for (const [c, list] of candidates) {
+            if (servers.indexOf(c) !== -1) {
+              list.push(shard);
+            }
+          }
+        }
+        
+        const sortedCandidates = [...candidates.entries()].sort((l, r) => l[1].length > r[1].length);
+        print("List of potential failover candidates, first has most in sync:")
+        for (const [c, list] of sortedCandidates) {
+          const missing = _.without(allShards, ...list);
+          print(`Failover to ${c} insync: ${JSON.stringify(list)}, please check state of ${JSON.stringify(missing)}`);
+          print(`If you want to failover to this server use: ./cleanup/forceFailover.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('forceFailover.json')} ${c} ${search} ${shardIndex}`)
+        }
+        clonedGroups.set(search, shardGroups.get(search));
+      }
+      fs.write("forceFailover.json", JSON.stringify(recursiveMapPrinter(clonedGroups)));
     }
   };
 
@@ -473,7 +641,7 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("dead-primaries.json", JSON.stringify(output));
-      print("To remove dead Primaries infection please run the following command:");
+      print("To remove Dead Primaries infection please run the following command:");
       print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
     }
   };
@@ -486,6 +654,8 @@ if (0 < ARGUMENTS.length) {
   extractDatabases(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
+  extractDistributionGroups(info, dump);
+
   let infected = false;
   // Print funny tables
   infected = printPrimaries(info) || infected;
@@ -505,11 +675,15 @@ if (0 < ARGUMENTS.length) {
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   print();
 
+  infected = printDistributionGroups(info) || infected;
+  print();
+
   if (infected) {
     // Save to files
     saveCollectionIntegrity(info);
     saveZombies(info);
     saveCurrentDatabasesDeadPrimaries(info);
+    saveDistributionGroups(info);
   } else {
     print('Did not detect any infection in your cluster');
   }
