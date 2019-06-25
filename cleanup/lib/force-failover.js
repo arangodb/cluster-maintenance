@@ -16,7 +16,7 @@ let shardIndex;
   }
 
   try {
-    let role = db._version(true).details.role;
+    let role = require("@arangodb").db._version(true).details.role;
 
     if (role === "AGENT") {
       let agency = arango.POST('/_api/agency/read', [
@@ -33,7 +33,7 @@ let shardIndex;
     }
   } catch (e) {
     print("FATAL: " + e);
-    // return;
+    return;
   }
 
   // imports
@@ -75,7 +75,7 @@ let shardIndex;
     desiredServers.unshift(target); // add desired leader in front (inplace operation)
     data[planPathPrefix] = {
       'op': 'set',
-      'value': desiredServers
+      'new': desiredServers
     }
     prec[planPathPrefix] = {
       'old': oldServers
@@ -89,32 +89,4 @@ let shardIndex;
     print("INFO: " + JSON.stringify(res));
   }
   
-
-/*
-  _.each(zombies, function(zombie) {
-    if (zombie.database.length > 0 && zombie.cid.length > 0) {
-      print("removing zombie collection: " + zombie.database + "/" + zombie.cid);
-
-      data = {};
-      data['/arango/Plan/Collections/' + zombie.database + '/' + zombie.cid] = {
-        'op': 'delete'
-      };
-
-      pre = {};
-      pre['/arango/Plan/Collections/' + zombie.database + '/' + zombie.cid] = {
-        'old': zombie.data
-      };
-      
-      let res = arango.POST('/_api/agency/write', JSON.stringify([[data, pre]]));
-
-      if (res.results[0] === 0) {
-        print("WARNING: pre-condition failed, maybe cleanup already done");
-      } else {
-        print("INFO: " + JSON.stringify(res));
-      }
-    } else {
-      print("ERROR: corrupted entry in zombie file: " + JSON.stringify(zombie));
-    }
-  });
-  */
 }());
