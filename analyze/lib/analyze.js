@@ -335,7 +335,6 @@ if (0 < ARGUMENTS.length) {
 
         if (!isNewEntry) {
           // Pick any of the existing, they need to be all equal, or at least one needs to be reported
-          print(JSON.stringify(group.plan));
           const comp = group.plan.values().next().value;
           for (let i = 0; i < comp.length; ++i) {
             if (comp[i] !== myPlan[i]) {
