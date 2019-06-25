@@ -238,7 +238,6 @@ if (0 < ARGUMENTS.length) {
     info.realLeaderMissing = [];
     info.leaderOnDeadServer = [];
     info.followerOnDeadServer = [];
-
     for (const [db, collections] of Object.entries(planCollections)) {
       if (!planDBs.hasOwnProperty(db)) {
         // This database has Collections but is deleted.
@@ -256,7 +255,7 @@ if (0 < ARGUMENTS.length) {
         if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
           // The prototype is missing
           info.realLeaderMissing.push({ db, name, distributeShardsLike, col });
-        }     
+        }
 
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
