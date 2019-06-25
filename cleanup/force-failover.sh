@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: remove-zombie.sj AGENCY_ENDPOINT ZOMBIE_FILE
+# usage: force-failover.sh AGENCY_ENDPOINT ZOMBIE_FILE
 
-# The sript requires an installed version of arangodb or at least a way to call
-# the arangosh executable from anywhere. We try to do path resolving on best a
+# The script requires an installed version of arangodb or at least a way to call
+# the arangosh executable from anywhere. We try to do path resolving on a
 # best effort basis for some systems.
 #
 # If it does not work for you change the `do_resolve` for your system to false.
@@ -59,8 +59,6 @@ fi
 
 if $do_resolve; then
     file_name="$(realpath "$(readlink -s -f "$1")")"
-    echo "$1"
-    echo "$file_name"
     if [[ -z "$file_name" ]]; then
         echo "file resolution failed"
         exit 1
