@@ -473,7 +473,7 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("dead-primaries.json", JSON.stringify(output));
-      print("To remove Dear Primaries infection please run the following command:");
+      print("To remove Dead Primaries infection please run the following command:");
       print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
     }
   };
