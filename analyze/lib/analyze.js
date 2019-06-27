@@ -112,7 +112,8 @@ if (0 < ARGUMENTS.length) {
         leaders: [],
         followers: [],
         realLeaders: [],
-        isSystem: (name.charAt(0) === '_')
+        isSystem: (name.charAt(0) === '_'),
+        data: database
       }, database);
     });
 
@@ -393,7 +394,7 @@ if (0 < ARGUMENTS.length) {
       return true;
     } else {
       print('You cluster is not infected by Zombies');
-      return false
+      return false;
     }
   };
 
@@ -425,7 +426,7 @@ if (0 < ARGUMENTS.length) {
       return true;
     } else {
       print('You cluster is not infected by Broken collections');
-      return false
+      return false;
     }
   };
 
@@ -478,15 +479,58 @@ if (0 < ARGUMENTS.length) {
     }
   };
 
-  const info = {};
+  let extractEmptyDatabases = function (info) {
+    info.emptyDatabases = [];
 
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
+      if (database.collections.length === 0 && database.shards.length === 0) {
+        info.emptyDatabases.push(database);
+      }
+    });
+  };
+
+  let printEmptyDatabases = function (info) {
+    if (0 < info.emptyDatabases.length) {
+      var table = new AsciiTable('Skeleton Databases');
+      table.setHeading('Database');
+
+      _.each(info.emptyDatabases, function (database) {
+        table.addRow(database.name);
+      });
+
+      print(table.toString());
+      return true;
+    } else {
+      print('You cluster is not infected by databases skeletons');
+      return false;
+    }
+  };
+
+  let saveEmptyDatabases = function (info) {
+    if (info.emptyDatabases.length > 0) {
+      let output = [];
+
+      _.each(info.emptyDatabases, function (skeleton) {
+        output.push({ database: skeleton.name, data: skeleton.data });
+      });
+
+      fs.write("skeleton-databases.json", JSON.stringify(output));
+      print("To remove Skeleton Databases infection please run the following command:");
+      print(`./cleanup/remove-skeleton-databases.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('skeleton-databases.json')}`);
+    }
+  };
+
+  const info = {};
 
   // extract info
   extractPrimaries(info, dump);
   extractDatabases(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
+  extractEmptyDatabases(info);
+
   let infected = false;
+
   // Print funny tables
   infected = printPrimaries(info) || infected;
   print();
@@ -504,12 +548,19 @@ if (0 < ARGUMENTS.length) {
   print();
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   print();
+  infected = printEmptyDatabases(info) || infected;
+  print();
 
   if (infected) {
     // Save to files
     saveCollectionIntegrity(info);
+    print();
     saveZombies(info);
+    print();
     saveCurrentDatabasesDeadPrimaries(info);
+    print();
+    saveEmptyDatabases(info);
+    print();
   } else {
     print('Did not detect any infection in your cluster');
   }
