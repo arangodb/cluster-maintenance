@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: remove-zombie.sj AGENCY_ENDPOINT ZOMBIE_FILE
+# usage: remove-<type> AGENCY_ENDPOINT TYPE_FILE
 
 # The sript requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
