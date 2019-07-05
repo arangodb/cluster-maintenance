@@ -266,7 +266,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by leftover Collections');
+      print('Your cluster is not infected by leftover Collections');
     }
 
     if (noShardCollections.length > 0) {
@@ -278,7 +278,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by collections without shards');
+      print('Your cluster is not infected by collections without shards');
     }
 
     if (realLeaderMissing.length > 0) {
@@ -290,7 +290,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by missing distributeShardsLike Leaders');
+      print('Your cluster is not infected by missing distributeShardsLike Leaders');
     }
 
     if (leaderOnDeadServer.length > 0) {
@@ -302,7 +302,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by leaders on failed DBServer');
+      print('Your cluster is not infected by leaders on failed DBServer');
     }
 
     if (followerOnDeadServer.length > 0) {
@@ -314,7 +314,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by followers on failed DBServer');
+      print('Your cluster is not infected by followers on failed DBServer');
     }
     return infected;
   };
@@ -393,7 +393,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('You cluster is not infected by Zombies');
+      print('Your cluster is not infected by Zombies');
       return false;
     }
   };
@@ -425,7 +425,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('You cluster is not infected by Broken collections');
+      print('Your cluster is not infected by Broken collections');
       return false;
     }
   };
@@ -501,7 +501,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('You cluster is not infected by databases skeletons');
+      print('Your cluster is not infected by databases skeletons');
       return false;
     }
   };
@@ -519,6 +519,54 @@ if (0 < ARGUMENTS.length) {
       print(`./cleanup/remove-skeleton-databases.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('skeleton-databases.json')}`);
     }
   };
+  
+  let extractMissingCollections = function (info) {
+    info.missingCollections = [];
+
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
+      let system = database.collections.filter(function (c) {
+        return c.name[0] === '_';
+      }).map(function(c) {
+        return c.name;
+      });
+      let nonSystem = database.collections.filter(function (c) {
+        return c.name[0] !== '_';
+      }).map(function(c) {
+        return c.name;
+      });
+
+      let missing = [];
+      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function(name) {
+        if (system.indexOf(name) === -1) {
+          missing.push(name);
+        }
+      });
+
+      if (missing.length > 0) {
+        info.missingCollections.push({ database: database.name, missing });
+      }
+    });
+  };
+  
+  let printMissingCollections = function (info) {
+    if (0 < info.missingCollections.length) {
+      var table = new AsciiTable('Missing Collections');
+      table.setHeading('Database', 'Collections');
+
+      _.each(info.missingCollections, function (entry) {
+        table.addRow(entry.database, entry.missing.join(", "));
+      });
+
+      print('Your cluster *is* infected by missing system collections:');
+      print(table.toString());
+      print('These collections can be created manually if important.');
+      return true;
+    } else {
+      print('Your cluster is not infected by missing system collections');
+      return false;
+    }
+  };
+
 
   const info = {};
 
@@ -528,6 +576,7 @@ if (0 < ARGUMENTS.length) {
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractEmptyDatabases(info);
+  extractMissingCollections(info);
 
   let infected = false;
 
@@ -549,6 +598,8 @@ if (0 < ARGUMENTS.length) {
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   print();
   infected = printEmptyDatabases(info) || infected;
+  print();
+  infected = printMissingCollections(info) || infected;
   print();
 
   if (infected) {
