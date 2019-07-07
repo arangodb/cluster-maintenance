@@ -529,11 +529,6 @@ if (0 < ARGUMENTS.length) {
       }).map(function(c) {
         return c.name;
       });
-      let nonSystem = database.collections.filter(function (c) {
-        return c.name[0] !== '_';
-      }).map(function(c) {
-        return c.name;
-      });
 
       let missing = [];
       [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function(name) {
