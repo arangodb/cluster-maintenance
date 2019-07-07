@@ -544,7 +544,7 @@ if (0 < ARGUMENTS.length) {
   };
   
   let printMissingCollections = function (info) {
-    if (0 < info.missingCollections.length) {
+    if (info.missingCollections.length > 0) {
       var table = new AsciiTable('Missing Collections');
       table.setHeading('Database', 'Collections');
 
