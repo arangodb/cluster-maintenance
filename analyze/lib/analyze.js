@@ -594,6 +594,49 @@ if (0 < ARGUMENTS.length) {
       print();
     }
   };
+  
+  let extractMissingCollections = function (info) {
+    info.missingCollections = [];
+
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
+      let system = database.collections.filter(function (c) {
+        return c.name[0] === '_';
+      }).map(function(c) {
+        return c.name;
+      });
+
+      let missing = [];
+      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function(name) {
+        if (system.indexOf(name) === -1) {
+          missing.push(name);
+        }
+      });
+
+      if (missing.length > 0) {
+        info.missingCollections.push({ database: database.name, missing });
+      }
+    });
+  };
+  
+  let printMissingCollections = function (info) {
+    if (info.missingCollections.length > 0) {
+      printBad('Your cluster is missing relevant system collections:');
+      var table = new AsciiTable('Missing collections');
+      table.setHeading('Database', 'Collections');
+
+      _.each(info.missingCollections, function (entry) {
+        table.addRow(entry.database, entry.missing.join(", "));
+      });
+
+      print(table.toString());
+      print('These collections can be created manually if important.');
+      return true;
+    } else {
+      printGood('Your cluster is not missing relevant system collections');
+      return false;
+    }
+  };
+
 
   const info = {};
 
