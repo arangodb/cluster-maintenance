@@ -594,7 +594,7 @@ if (0 < ARGUMENTS.length) {
       print();
     }
   };
-
+  
   const info = {};
 
   // extract info
