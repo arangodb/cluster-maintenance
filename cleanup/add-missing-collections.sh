@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: remove-<type> AGENCY_ENDPOINT TYPE_FILE
+# usage: add-missing-collections AGENCY_ENDPOINT TYPE_FILE
 
 # The script requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
@@ -31,8 +31,13 @@ server_endpoint="none"
 
 while [[ "$#" -gt 2 ]]; do
     case "$1" in
-        --server.endpoint)
+        "--server.endpoint" )
             server_endpoint=$2
+            shift
+            shift
+            ;;
+        "--server.username" | "--server.password" | "--server.ask-jwt-secret" | "--server.jwt-secret-keyfile" )
+            args="$args $1 $2"
             shift
             shift
             ;;
@@ -53,7 +58,7 @@ if [[ "$#" -gt 0 ]]; then
 fi
 
 if [[ -z "$*" ]]; then
-    echo "usage: $0 --server.endpoint LEADER-AGENT INPUT-FILE"
+    echo "usage: $0 --server.endpoint COORDINATOR INPUT-FILE"
     exit 1
 fi
 
@@ -76,6 +81,8 @@ if $do_resolve; then
     cd "$script_dir" || { echo "failed to change into binary dir $script_dir"; exit 1; }
     echo "$script_dir"
 fi
+
+echo arangosh --server.endpoint $server_endpoint --javascript.execute "lib/$(basename $0 .sh).js" $args -- "$file_name"
 
 arangosh \
     --server.endpoint $server_endpoint \

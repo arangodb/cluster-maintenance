@@ -427,6 +427,7 @@ if (0 < ARGUMENTS.length) {
 
       print("To remedy the zombies issue please run the following command:");
       print(`./cleanup/remove-zombies.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('zombies.json')}`);
+      print();
     }
   };
 
@@ -495,6 +496,7 @@ if (0 < ARGUMENTS.length) {
       fs.write("dead-primaries.json", JSON.stringify(output));
       print("To remedy the dead primaries issue please run the following command:");
       print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
+      print();
     }
   };
 
@@ -511,8 +513,8 @@ if (0 < ARGUMENTS.length) {
   let printEmptyDatabases = function (info) {
     if (0 < info.emptyDatabases.length) {
       printBad('Your cluster has some skeleton databases (databases without collections)');
-      var table = new AsciiTable('Skeleton databases');
-      table.setHeading('Database');
+      var table = new AsciiTable('Skeletons');
+      table.setHeading('Database name');
 
       _.each(info.emptyDatabases, function (database) {
         table.addRow(database.name);
@@ -537,6 +539,7 @@ if (0 < ARGUMENTS.length) {
       fs.write("skeleton-databases.json", JSON.stringify(output));
       print("To remedy the skeleton databases issue please run the following command:");
       print(`./cleanup/remove-skeleton-databases.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('skeleton-databases.json')}`);
+      print();
     }
   };
   
@@ -574,14 +577,23 @@ if (0 < ARGUMENTS.length) {
       });
 
       print(table.toString());
-      print('These collections can be created manually if important.');
       return true;
     } else {
       printGood('Your cluster is not missing relevant system collections');
       return false;
     }
   };
+  
+  let saveMissingCollections = function (info) {
+    if (info.missingCollections.length > 0) {
+      let output = info.missingCollections;
 
+      fs.write("missing-collections.json", JSON.stringify(output));
+      print("To remedy the missing collections issue please run the following command AGAINST A COORDINATOR:");
+      print(`./cleanup/add-missing-collections.sh <options> ${fs.makeAbsolute('missing-collections.json')}`);
+      print();
+    }
+  };
 
   const info = {};
 
@@ -617,13 +629,10 @@ if (0 < ARGUMENTS.length) {
   if (infected) {
     // Save to files
     saveCollectionIntegrity(info);
-    print();
     saveZombies(info);
-    print();
     saveCurrentDatabasesDeadPrimaries(info);
-    print();
     saveEmptyDatabases(info);
-    print();
+    saveMissingCollections(info);
   } else {
     printGood('Did not detect any issues in your cluster');
   }
