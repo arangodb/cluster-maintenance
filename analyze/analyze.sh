@@ -30,28 +30,27 @@ fi
 args=""
 server_endpoint="none"
 
-while [[ "$#" -gt 1 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case "$1" in
+        --server.endpoint=*)
+            server_endpoint=`echo "$1" | cut -d '=' -f 2`
+            shift
+            ;;
         --server.endpoint)
             server_endpoint=$2
             shift
             shift
             ;;
         *)
-            args="$args $1"
-            shift
+            if [[ "$#" -gt 1 ]]; then 
+              args="$args $1"
+              shift
+            else
+              break
+            fi
             ;;
     esac
 done
-
-if [[ "$#" -gt 0 ]]; then
-    case "$1" in
-        http*|ssl*|tcp*)
-            server_endpoint="$1"
-            shift
-            ;;
-    esac
-fi
 
 if [[ "$server_endpoint" == "none" ]]; then
     if [[ -z "$*" ]]; then

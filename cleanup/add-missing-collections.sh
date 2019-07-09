@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: add-missing-collections AGENCY_ENDPOINT TYPE_FILE
+# usage: add-missing-collections COORDINATOR_ENDPOINT FILE
 
 # The script requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
@@ -29,8 +29,12 @@ fi
 args=""
 server_endpoint="none"
 
-while [[ "$#" -gt 2 ]]; do
+while [[ "$#" -gt 0 ]]; do
     case "$1" in
+        --server.endpoint=*)
+            server_endpoint=`echo "$1" | cut -d '=' -f 2`
+            shift
+            ;;
         "--server.endpoint" )
             server_endpoint=$2
             shift
@@ -42,20 +46,15 @@ while [[ "$#" -gt 2 ]]; do
             shift
             ;;
         *)
-            args="$args $1"
-            shift
+            if [[ "$#" -gt 1 ]]; then 
+              args="$args $1"
+              shift
+            else
+              break
+            fi
             ;;
     esac
 done
-
-if [[ "$#" -gt 0 ]]; then
-    case "$1" in
-        http*|ssl*|tcp*)
-            server_endpoint="$1"
-            shift
-            ;;
-    esac
-fi
 
 if [[ -z "$*" ]]; then
     echo "usage: $0 --server.endpoint COORDINATOR INPUT-FILE"
@@ -81,8 +80,6 @@ if $do_resolve; then
     cd "$script_dir" || { echo "failed to change into binary dir $script_dir"; exit 1; }
     echo "$script_dir"
 fi
-
-echo arangosh --server.endpoint $server_endpoint --javascript.execute "lib/$(basename $0 .sh).js" $args -- "$file_name"
 
 arangosh \
     --server.endpoint $server_endpoint \
