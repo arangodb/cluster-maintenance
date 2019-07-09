@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -u
 
-# usage: analyze.sh DUMP_FILE
-#        analyze.sh AGENCY_ENDPOINT
+# usage: add-missing-collections COORDINATOR_ENDPOINT FILE
 
-# The sript requires an installed version of arangodb or at least a way to call
+# The script requires an installed version of arangodb or at least a way to call
 # the arangosh executable from anywhere. We try to do path resolving on best a
 # best effort basis for some systems.
 #
@@ -36,8 +35,13 @@ while [[ "$#" -gt 0 ]]; do
             server_endpoint=`echo "$1" | cut -d '=' -f 2`
             shift
             ;;
-        --server.endpoint)
+        "--server.endpoint" )
             server_endpoint=$2
+            shift
+            shift
+            ;;
+        "--server.username" | "--server.password" | "--server.ask-jwt-secret" | "--server.jwt-secret-keyfile" )
+            args="$args $1 $2"
             shift
             shift
             ;;
@@ -52,26 +56,22 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
-if [[ "$server_endpoint" == "none" ]]; then
-    if [[ -z "$*" ]]; then
-        echo "no file provided"
-        exit 1
-    fi
-
-    if $do_resolve; then
-        file_name="$(realpath "$(readlink -s -f "$1")")"
-        if [[ -z "$file_name" ]]; then
-            echo "file resolution failed"
-            exit 1
-        fi
-        echo "full path of json: $file_name"
-    else
-        file_name="$1"
-    fi
-else
-    file_name=""
+if [[ -z "$*" ]]; then
+    echo "usage: $0 --server.endpoint COORDINATOR INPUT-FILE"
+    exit 1
 fi
 
+if $do_resolve; then
+    file_name="$(realpath "$(readlink -s -f "$1")")"
+
+    if [[ -z "$file_name" ]]; then
+        echo "file resolution failed"
+        exit 1
+    fi
+    echo "full path of json: $file_name"
+else
+    file_name="$1"
+fi
 
 # Try to enter the dir that contains this file as we require to be relative to
 # the lib directory that is also contained in the same directory.
