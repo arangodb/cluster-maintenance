@@ -9,7 +9,6 @@ let file;
   }
 
   try {
-    print(db._version(true));
     let role = db._version(true).details.role;
 
     if (role !== "COORDINATOR") {
