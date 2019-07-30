@@ -594,7 +594,80 @@ if (0 < ARGUMENTS.length) {
       print();
     }
   };
-  
+
+ let extractOutOfSyncFollowers = (info, dump) => {
+   const planCollections = dump.arango.Plan.Collections;
+   const currentCollections = dump.arango.Current.Collections;
+   const compareFollowers = (plan, current) => {
+     // If leaders are not equal we are out of sync.
+     if(plan[0] != current[0]) {
+       return false;
+     }
+     if (plan.length === 1) {
+       // we have not even requested a follower
+       return false;
+     }
+     for (let i = 1; i < plan.length; ++i) {
+       const other = current.indexOf(plan[i]);
+       if (other < 1) {
+         return false;
+       }
+     }
+     return true;
+   };
+   info.outOfSyncFollowers = [];
+   for (const [db, collections] of Object.entries(planCollections)) {
+     if (!currentCollections.hasOwnProperty(db)) {
+       // database skeleton or  so, don't care
+       continue;
+     }
+     for (const [name, col] of Object.entries(collections)) {
+       const { shards } = col;
+       if (!shards || Object.keys(shards).length === 0) {
+         continue;
+       }
+       for (const [shard, servers] of Object.entries(shards)) {
+         const current = currentCollections[db][name][shard].servers;
+         if (!compareFollowers(servers, current)) {
+           info.outOfSyncFollowers.push({
+             db, name, shard, servers, current
+           });
+         }
+       }
+
+ 
+      }
+   }
+ };
+ 
+  const printOutOfSyncFollowers = (info) => {
+    const { outOfSyncFollowers } = info;
+    const counters = new Map();
+    if (outOfSyncFollowers.length > 0) {
+      {
+        const table = new AsciiTable('Out of sync followers');
+        table.setHeading('Database', 'CID', 'Shard', 'Planned', 'Real');
+        for (const oosFollower of outOfSyncFollowers ) {
+          table.addRow(oosFollower.db, oosFollower.name, oosFollower.shard, oosFollower.servers, oosFollower.current);
+          counters.set(oosFollower.servers[0], (counters.get(oosFollower.servers[0]) || 0) + 1)
+        }
+        print(table.toString());
+      }
+      {
+        const table = new AsciiTable('Number of non-replicated shards per server');
+        table.setHeading('Server', 'Number');
+        for (const [server, number] of counters.entries()) {
+          table.addRow(server, number);
+        }
+        print(table.toString());
+      }
+      return true;
+    } else {
+      print('Your cluster does not have collections where followers are out of sync');
+      return false;
+    }
+  };
+
   const info = {};
 
   // extract info
@@ -604,6 +677,7 @@ if (0 < ARGUMENTS.length) {
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractEmptyDatabases(info);
   extractMissingCollections(info);
+  extractOutOfSyncFollowers(info, dump);
 
   let infected = false;
 
@@ -623,6 +697,7 @@ if (0 < ARGUMENTS.length) {
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   infected = printEmptyDatabases(info) || infected;
   infected = printMissingCollections(info) || infected;
+  infected = printOutOfSyncFollowers(info) || infected;
   
   print();
 
