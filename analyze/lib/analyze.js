@@ -642,7 +642,7 @@ if (0 < ARGUMENTS.length) {
   const printOutOfSyncFollowers = (info) => {
     const { outOfSyncFollowers } = info;
     const counters = new Map();
-    if (0 < outOfSyncFollowers.length) {
+    if (outOfSyncFollowers.length > 0) {
       {
         const table = new AsciiTable('Out of sync followers');
         table.setHeading('Database', 'CID', 'Shard', 'Planned', 'Real');
@@ -662,7 +662,7 @@ if (0 < ARGUMENTS.length) {
       }
       return true;
     } else {
-      print('You cluster does not have collections where followers are out of sync');
+      print('Your cluster does not have collections where followers are out of sync');
       return false;
     }
   };
