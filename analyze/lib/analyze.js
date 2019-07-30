@@ -599,6 +599,7 @@ if (0 < ARGUMENTS.length) {
    const planCollections = dump.arango.Plan.Collections;
    const currentCollections = dump.arango.Current.Collections;
    const compareFollowers = (plan, current) => {
+     // If leaders are not equal we are out of sync.
      if(plan[0] != current[0]) {
        return false;
      }
@@ -653,7 +654,7 @@ if (0 < ARGUMENTS.length) {
         print(table.toString());
       }
       {
-        const table = new AsciiTable('Number of shards with some out of sync followers per server');
+        const table = new AsciiTable('Number of non-replicated shards per server');
         table.setHeading('Server', 'Number');
         for (const [server, number] of counters.entries()) {
           table.addRow(server, number);
