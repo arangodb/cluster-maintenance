@@ -4,13 +4,23 @@ if (0 < ARGUMENTS.length) {
   file = ARGUMENTS[0];
 }
 
-;
 (function () {
   // imports
   const fs = require('fs');
   const _ = require('underscore');
   const AsciiTable = require('./ascii-table');
 
+  const printGood = (msg) => {
+    print('Good: ' + msg);
+    print();
+  };
+  
+  const printBad = (msg) => {
+    // blink blink blink
+    print('Bad: ' + msg);
+    print();
+  };
+  
   let dump;
 
   if (file) {
@@ -137,7 +147,8 @@ if (0 < ARGUMENTS.length) {
         leaders: [],
         followers: [],
         realLeaders: [],
-        isSystem: (name.charAt(0) === '_')
+        isSystem: (name.charAt(0) === '_'),
+        data: database
       }, database);
     });
 
@@ -359,13 +370,17 @@ if (0 < ARGUMENTS.length) {
     const { noInsyncAndDeadLeader } = info;
     let infected = false;
     if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
+      printBad('Your cluster has collections with dead leader and no insync follower');
+      
       const table = new AsciiTable('Collections with deadLeader and no-insync Follower');
       table.setHeading('CID', 'Shard', 'DistributeLike');
       for (const {cid, shard, search} of noInsyncAndDeadLeader) {
-          table.addRow(cid, shard, search);
+        table.addRow(cid, shard, search);
       }
       print(table.toString());
       infected = true;
+    } else {
+      printGood('Your cluster does not have any collections with dead leader and no insync follower');
     }
     return infected;
   };
@@ -423,7 +438,8 @@ if (0 < ARGUMENTS.length) {
     } = info;
     let infected = false;
     if (noPlanDatabases.length > 0) {
-      const table = new AsciiTable('Deleted Databases with leftover Collections');
+      printBad('Your cluster has some leftover collections from deleted databases');
+      const table = new AsciiTable('Deleted databases with leftover collections');
       table.setHeading('Database');
       for (const d of noPlanDatabases) {
         table.addRow(d);
@@ -431,10 +447,11 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by leftover Collections');
+      printGood('Your cluster does not have any leftover collections from deleted databases');
     }
 
     if (noShardCollections.length > 0) {
+      printBad('Your cluster has some collections without shards');
       const table = new AsciiTable('Collections without shards');
       table.setHeading('Database', 'CID');
       for (const d of noShardCollections) {
@@ -443,11 +460,12 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by collections without shards');
+      printGood('Your cluster does not have any collections without shards');
     }
 
     if (realLeaderMissing.length > 0) {
-      const table = new AsciiTable('Real Leader missing for collection');
+      printBad('Your cluster misses some collection(s) used as leaders in distributeShardsLike');
+      const table = new AsciiTable('Real leader missing for collection');
       table.setHeading('Database', 'CID', 'LeaderCID');
       for (const d of realLeaderMissing) {
         table.addRow(d.db, d.name, d.distributeShardsLike);
@@ -455,11 +473,12 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by missing distributeShardsLike Leaders');
+      printGood('Your cluster does not miss any collections used as leaders in distributeShardsLike');
     }
 
     if (leaderOnDeadServer.length > 0) {
-      const table = new AsciiTable('Leader on Failed DBServer');
+      printBad('Your cluster has leaders placed on failed DBServers');
+      const table = new AsciiTable('Leader on failed DBServer');
       table.setHeading('Database', 'CID', 'Shard', 'Failed DBServer', 'All Servers');
       for (const d of leaderOnDeadServer) {
         table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
@@ -467,11 +486,12 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by leaders on failed DBServer');
+      printGood('Your cluster does not have any leaders placed on failed DBServers');
     }
 
     if (followerOnDeadServer.length > 0) {
-      const table = new AsciiTable('Follower on Failed DBServer');
+      printBad('Your cluster has followers placed on failed DBServers');
+      const table = new AsciiTable('Follower on failed DBServer');
       table.setHeading('Database', 'CID', 'Shard', 'Failed DBServer', 'All Servers');
       for (const d of followerOnDeadServer) {
         table.addRow(d.db, d.name, d.shard, d.server, JSON.stringify(d.servers));
@@ -479,7 +499,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       infected = true;
     } else {
-      print('You cluster is not infected by followers on failed DBServer');
+      printGood('Your cluster does not have any followers placed on failed DBServers');
     }
     return infected;
   };
@@ -548,6 +568,7 @@ if (0 < ARGUMENTS.length) {
 
   let printZombies = function (info) {
     if (0 < info.zombies.length) {
+      printBad('Your cluster has some zombies');
       var table = new AsciiTable('Zombies');
       table.setHeading('Database', 'CID');
 
@@ -558,8 +579,8 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('You cluster is not infected by Zombies');
-      return false
+      printGood('Your cluster does not have any zombies');
+      return false;
     }
   };
 
@@ -573,13 +594,15 @@ if (0 < ARGUMENTS.length) {
 
       fs.write("zombies.json", JSON.stringify(output));
 
-      print("To remove Zombies infection please run the following command:");
+      print("To remedy the zombies issue please run the following command:");
       print(`./cleanup/remove-zombies.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('zombies.json')}`);
+      print();
     }
   };
 
   let printBroken = function (info) {
     if (0 < info.broken.length) {
+      printBad('Your cluster has broken collections');
       var table = new AsciiTable('Broken');
       table.setHeading('Database', 'CID');
 
@@ -590,8 +613,8 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('You cluster is not infected by Broken collections');
-      return false
+      printGood('Your cluster does not have broken collections');
+      return false;
     }
   };
 
@@ -615,7 +638,8 @@ if (0 < ARGUMENTS.length) {
 
   let printCurrentDatabasesDeadPrimaries = function (info) {
     if (0 < info.databasesDeadPrimaries.length) {
-      var table = new AsciiTable('Dead Primaries in Current');
+      printBad('Your cluster has dead primaries in Current');
+      var table = new AsciiTable('Dead primaries in Current');
       table.setHeading('Database', 'Primary');
 
       _.each(info.databasesDeadPrimaries, function (zombie) {
@@ -625,7 +649,7 @@ if (0 < ARGUMENTS.length) {
       print(table.toString());
       return true;
     } else {
-      print('Your cluster is not infected by Dead Primaries');
+      printGood('Your cluster does not have any dead primaries in Current');
       return false;
     }
   };
@@ -639,13 +663,181 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("dead-primaries.json", JSON.stringify(output));
-      print("To remove Dead Primaries infection please run the following command:");
+      print("To remedy the dead primaries issue please run the following command:");
       print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
+      print();
+    }
+  };
+
+  let extractEmptyDatabases = function (info) {
+    info.emptyDatabases = [];
+
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
+      if (database.collections.length === 0 && database.shards.length === 0) {
+        info.emptyDatabases.push(database);
+      }
+    });
+  };
+
+  let printEmptyDatabases = function (info) {
+    if (0 < info.emptyDatabases.length) {
+      printBad('Your cluster has some skeleton databases (databases without collections)');
+      var table = new AsciiTable('Skeletons');
+      table.setHeading('Database name');
+
+      _.each(info.emptyDatabases, function (database) {
+        table.addRow(database.name);
+      });
+
+      print(table.toString());
+      return true;
+    } else {
+      printGood('Your cluster does not have any skeleton databases (databases without collections)');
+      return false;
+    }
+  };
+
+  let saveEmptyDatabases = function (info) {
+    if (info.emptyDatabases.length > 0) {
+      let output = [];
+
+      _.each(info.emptyDatabases, function (skeleton) {
+        output.push({ database: skeleton.name, data: skeleton.data });
+      });
+
+      fs.write("skeleton-databases.json", JSON.stringify(output));
+      print("To remedy the skeleton databases issue please run the following command:");
+      print(`./cleanup/remove-skeleton-databases.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('skeleton-databases.json')}`);
+      print();
+    }
+  };
+  
+  let extractMissingCollections = function (info) {
+    info.missingCollections = [];
+
+    _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
+      let system = database.collections.filter(function (c) {
+        return c.name[0] === '_';
+      }).map(function(c) {
+        return c.name;
+      });
+
+      let missing = [];
+      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function(name) {
+        if (system.indexOf(name) === -1) {
+          missing.push(name);
+        }
+      });
+
+      if (missing.length > 0) {
+        info.missingCollections.push({ database: database.name, missing });
+      }
+    });
+  };
+  
+  let printMissingCollections = function (info) {
+    if (info.missingCollections.length > 0) {
+      printBad('Your cluster is missing relevant system collections:');
+      var table = new AsciiTable('Missing collections');
+      table.setHeading('Database', 'Collections');
+
+      _.each(info.missingCollections, function (entry) {
+        table.addRow(entry.database, entry.missing.join(", "));
+      });
+
+      print(table.toString());
+      return true;
+    } else {
+      printGood('Your cluster is not missing relevant system collections');
+      return false;
+    }
+  };
+  
+  let saveMissingCollections = function (info) {
+    if (info.missingCollections.length > 0) {
+      let output = info.missingCollections;
+
+      fs.write("missing-collections.json", JSON.stringify(output));
+      print("To remedy the missing collections issue please run the following command AGAINST A COORDINATOR:");
+      print(`./cleanup/add-missing-collections.sh <options> ${fs.makeAbsolute('missing-collections.json')}`);
+      print();
+    }
+  };
+
+ let extractOutOfSyncFollowers = (info, dump) => {
+   const planCollections = dump.arango.Plan.Collections;
+   const currentCollections = dump.arango.Current.Collections;
+   const compareFollowers = (plan, current) => {
+     // If leaders are not equal we are out of sync.
+     if(plan[0] != current[0]) {
+       return false;
+     }
+     if (plan.length === 1) {
+       // we have not even requested a follower
+       return false;
+     }
+     for (let i = 1; i < plan.length; ++i) {
+       const other = current.indexOf(plan[i]);
+       if (other < 1) {
+         return false;
+       }
+     }
+     return true;
+   };
+   info.outOfSyncFollowers = [];
+   for (const [db, collections] of Object.entries(planCollections)) {
+     if (!currentCollections.hasOwnProperty(db)) {
+       // database skeleton or  so, don't care
+       continue;
+     }
+     for (const [name, col] of Object.entries(collections)) {
+       const { shards } = col;
+       if (!shards || Object.keys(shards).length === 0) {
+         continue;
+       }
+       for (const [shard, servers] of Object.entries(shards)) {
+         const current = currentCollections[db][name][shard].servers;
+         if (!compareFollowers(servers, current)) {
+           info.outOfSyncFollowers.push({
+             db, name, shard, servers, current
+           });
+         }
+       }
+
+ 
+      }
+   }
+ };
+ 
+  const printOutOfSyncFollowers = (info) => {
+    const { outOfSyncFollowers } = info;
+    const counters = new Map();
+    if (outOfSyncFollowers.length > 0) {
+      {
+        const table = new AsciiTable('Out of sync followers');
+        table.setHeading('Database', 'CID', 'Shard', 'Planned', 'Real');
+        for (const oosFollower of outOfSyncFollowers ) {
+          table.addRow(oosFollower.db, oosFollower.name, oosFollower.shard, oosFollower.servers, oosFollower.current);
+          counters.set(oosFollower.servers[0], (counters.get(oosFollower.servers[0]) || 0) + 1)
+        }
+        print(table.toString());
+      }
+      {
+        const table = new AsciiTable('Number of non-replicated shards per server');
+        table.setHeading('Server', 'Number');
+        for (const [server, number] of counters.entries()) {
+          table.addRow(server, number);
+        }
+        print(table.toString());
+      }
+      return true;
+    } else {
+      print('Your cluster does not have collections where followers are out of sync');
+      return false;
     }
   };
 
   const info = {};
-
 
   // extract info
   extractPrimaries(info, dump);
@@ -653,8 +845,12 @@ if (0 < ARGUMENTS.length) {
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractDistributionGroups(info, dump);
+  extractEmptyDatabases(info);
+  extractMissingCollections(info);
+  extractOutOfSyncFollowers(info, dump);
 
   let infected = false;
+
   // Print funny tables
   infected = printPrimaries(info) || infected;
   print();
@@ -664,13 +860,15 @@ if (0 < ARGUMENTS.length) {
   print();
   infected = printPrimaryShards(info) || infected;
   print();
+  
   infected = printZombies(info) || infected;
-  print();
   infected = printBroken(info) || infected;
-  print();
   infected = printCollectionIntegrity(info) || infected;
-  print();
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
+  infected = printEmptyDatabases(info) || infected;
+  infected = printMissingCollections(info) || infected;
+  infected = printOutOfSyncFollowers(info) || infected;
+  
   print();
 
   infected = printDistributionGroups(info) || infected;
@@ -682,8 +880,10 @@ if (0 < ARGUMENTS.length) {
     saveZombies(info);
     saveCurrentDatabasesDeadPrimaries(info);
     saveDistributionGroups(info);
+    saveEmptyDatabases(info);
+    saveMissingCollections(info);
   } else {
-    print('Did not detect any infection in your cluster');
+    printGood('Did not detect any issues in your cluster');
   }
 
 }());

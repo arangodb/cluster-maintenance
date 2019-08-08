@@ -23,6 +23,12 @@ In case that there are left-over of dead primaries in current, a file
     
 with details will ge generated.
 
+In case that there databases with missing system collections, a file
+
+    missing-collections.json
+    
+with details will ge generated.
+
 See the [cleanup](../cleanup/README.md) scripts for next steps
 
 ## Creating an Agency dump file
