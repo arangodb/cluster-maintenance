@@ -9,9 +9,17 @@ let file;
   }
 
   try {
+    if (db === undefined) {
+      print("FATAL: database object 'db' not found. Please make sure this script is executed against a coordinator.");
+      return;
+    }
+
     let role = db._version(true).details.role;
 
-    if (role !== "COORDINATOR") {
+    if (role === undefined) {
+      // potentially ArangoDB 3.3
+      print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against a coordinator.");
+    } else if (role !== "COORDINATOR") {
       print("you need to connect to a coordinator, not a " + role);
       return;
     }
