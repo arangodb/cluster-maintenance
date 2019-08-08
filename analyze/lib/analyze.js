@@ -25,12 +25,38 @@ if (0 < ARGUMENTS.length) {
     }
   } else {
     try {
+      if (db === undefined) {
+        print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
+        return;
+      }
+
+      // try to find out the hard way if we are a 3.3 or 3.4 client
+      let stringify = false;
+      try {
+        let ArangoError = require('@arangodb').ArangoError;
+        try {
+          arango.POST('/_api/agency/read', [["/"]]);
+        } catch (err) {
+          if (err instanceof ArangoError && err.errorNum === 10) {
+            // bad parameter - wrong syntax
+            stringify = true;
+          }
+        }
+      } catch (err) {
+      }
+
       let role = db._version(true).details.role;
+      if (role === undefined) {
+        print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against an agent.");
+        role = "AGENT";
+      }
 
       if (role === "AGENT") {
-        let agency = arango.POST('/_api/agency/read', [
-          ["/"]
-        ]);
+        let payload = [["/"]];
+        if (stringify) {
+          payload = JSON.stringify(payload);
+        }
+        let agency = arango.POST('/_api/agency/read', payload);
 
         if (agency.code === 307) {
           print("you need to connect to the leader agent");

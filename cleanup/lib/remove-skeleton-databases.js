@@ -9,15 +9,23 @@ let file;
   }
 
   try {
+    if (db === undefined) {
+      print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
+      return;
+    }
+
     let role = db._version(true).details.role;
 
-    if (role === "AGENT") {
+    if (role === undefined) {
+      // potentially ArangoDB 3.3
+      print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against the leader agent.");
+    } else if (role === "AGENT") {
       let agency = arango.POST('/_api/agency/read', [
         ["/"]
       ]);
 
       if (agency.code === 307) {
-        print("you need to connect to the leader agent");
+        print("you need to connect to the leader agent. this agent is a follower.");
         return;
       }
     } else {
