@@ -24,12 +24,12 @@ if (0 < ARGUMENTS.length) {
       dump = dump.agency;
     }
   } else {
-    try {
-      if (db === undefined) {
-        print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
-        return;
-      }
+    if (db === undefined) {
+      print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
+      return;
+    }
 
+    try {
       // try to find out the hard way if we are a 3.3 or 3.4 client
       let stringify = false;
       try {
@@ -47,7 +47,7 @@ if (0 < ARGUMENTS.length) {
 
       let role = db._version(true).details.role;
       if (role === undefined) {
-        print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against an agent.");
+        print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against the leader agent.");
         role = "AGENT";
       }
 

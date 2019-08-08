@@ -8,12 +8,12 @@ let file;
     return;
   }
 
-  try {
-    if (db === undefined) {
-      print("FATAL: database object 'db' not found. Please make sure this script is executed against a coordinator.");
-      return;
-    }
+  if (db === undefined) {
+    print("FATAL: database object 'db' not found. Please make sure this script is executed against a coordinator.");
+    return;
+  }
 
+  try {
     let role = db._version(true).details.role;
 
     if (role === undefined) {
