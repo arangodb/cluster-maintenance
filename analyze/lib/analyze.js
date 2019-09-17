@@ -352,18 +352,20 @@ if (0 < ARGUMENTS.length) {
         const myPlan = [];
         const myCurrent = [];
         for (const [shard, servers] of Object.entries(shards)) {
-          const curServers = currentCollections[db][cid][shard].servers;
-          myPlan.push({shard, servers})
-          myCurrent.push({shard, servers: curServers})
-          if (curServers[0] !== servers[0]) {
-            unplannedLeader.add({cid, shard, search});
-          }
-          if (servers.length > 1 && curServers.length <= 1) {
-            noInsyncFollower.add({cid, shard, search});
-            if (!info.primaries.hasOwnProperty(curServers[0])) {
-              noInsyncAndDeadLeader.add({cid, shard, search});
+          try {
+            const curServers = currentCollections[db][cid][shard].servers;
+            myPlan.push({shard, servers})
+            myCurrent.push({shard, servers: curServers})
+            if (curServers[0] !== servers[0]) {
+              unplannedLeader.add({cid, shard, search});
             }
-          }
+            if (servers.length > 1 && curServers.length <= 1) {
+              noInsyncFollower.add({cid, shard, search});
+              if (!info.primaries.hasOwnProperty(curServers[0])) {
+                noInsyncAndDeadLeader.add({cid, shard, search});
+              }
+            }
+          } catch (e) {}
         }
 
         myPlan.sort((l, r) => l.shard > r.shard);
@@ -822,12 +824,14 @@ if (0 < ARGUMENTS.length) {
          continue;
        }
        for (const [shard, servers] of Object.entries(shards)) {
-         const current = currentCollections[db][name][shard].servers;
-         if (!compareFollowers(servers, current)) {
-           info.outOfSyncFollowers.push({
-             db, name, shard, servers, current
-           });
-         }
+         try {
+           const current = currentCollections[db][name][shard].servers;
+           if (!compareFollowers(servers, current)) {
+             info.outOfSyncFollowers.push({
+               db, name, shard, servers, current
+             });
+           }
+         } catch (e) {}
        }
 
  
