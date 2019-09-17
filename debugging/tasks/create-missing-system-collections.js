@@ -1,22 +1,37 @@
-/* 
- * helper script to create missing system collections 
- * will iterate over the list of databases and check for the availability
- * of the default system collections in them. will create the missing
- * system collections automatically
- *
- * to be used from the arangosh, with a privileged user (i.e. a user that
- * has write privileges for all databases).
- * suitable for use with ArangoDB 3.4. should not be used without adjustment
- * for ArangoDB 3.5 (as it will create too many system collections there -
- * we are not creating all of these system collections in 3.5 by default anymore).
- */
-(function() {
-  let print = require("internal").print;
+/*jshint globalstrict:false, strict:false, sub: true */
+/*global ARGUMENTS, print, arango, db */
+exports.name = "create-missing-system-collections";
+exports.group= "cleanup tasks";
+exports.args = [ ];
+exports.args_arangosh = "--server.endpoint COORDINATOR";
+exports.description = "Adds missing system collections for all databases (does not require the analyze task).";
+exports.selfTests = ["arango", "db", "coordinatorConnection"];
+exports.requires = "3.3.23 - 3.5.99";
+exports.info = `
+Helper script to create missing system collections. It will iterate over the list
+of databases and check for the availability of the default system collections
+in them. Will create the missing system collections automatically.
+
+To be used from the arangosh, with a privileged user (i.e. a user that has
+write privileges for all databases).
+`;
+
+exports.run = function(extra, args) {
+  const semver = require("semver");
   let old = db._name();
   let errors = 0;
   let collections = 0;
-  db._useDatabase("_system");
 
+  let colls = [ "_graphs", "_apps", "_appbundles", "_aqlfunctions",
+                "_jobs", "_queues"];
+
+  // with 3.5 some collections are obsolete
+  const version = db._version();
+  if(semver.lt(version, "3.5.0")) {
+    colls = colls.concat([ "_modules", "_frontend", "_routing" ]);
+  }
+
+  db._useDatabase("_system");
   let dbs = db._databases();
   dbs.sort();
   dbs.forEach(function(name) {
@@ -24,7 +39,7 @@
       db._useDatabase(name);
       print("# checking database " + name);
 
-      [ "_graphs", "_apps", "_appbundles", "_aqlfunctions", "_frontend", "_jobs", "_modules", "_queues", "_routing" ].forEach(function(collection) {
+      colls.forEach(function(collection) {
         let c = db._collection(collection);
         if (c !== null) {
           return;
@@ -39,10 +54,10 @@
         c = db._create(collection, properties);
         ++collections;
 
-        if (collection == "_jobs") {
+        if (collection === "_jobs") {
           c.ensureIndex({ type: "skiplist", fields: ["queue", "status", "delayUntil"], unique: false, sparse: false });
           c.ensureIndex({ type: "skiplist", fields: ["status", "queue", "delayUntil"], unique: false, sparse: false });
-        } else if (collection == "_apps") { 
+        } else if (collection === "_apps") {
           c.ensureIndex({ type: "hash", fields: ["mount"], unique: true, sparse: true });
         }
       });
@@ -52,10 +67,10 @@
       ++errors;
     }
   });
-  
+
   db._useDatabase(old);
 
   print();
   print("created " + collections + " collection(s), got " + errors + " error(s)");
   print();
-})();
+};

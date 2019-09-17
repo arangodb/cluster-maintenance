@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * (c) 2013 Beau Sorensen
  * MIT Licensed
@@ -605,7 +606,7 @@ AsciiTable.prototype._renderRow = function(row, str, align) {
       , cAlign = this.__aligns[k]
       , use = align
       , method = 'alignAuto'
-  
+
     if (typeof align === 'undefined') use = cAlign
 
     if (use === AsciiTable.LEFT) method = 'alignLeft'

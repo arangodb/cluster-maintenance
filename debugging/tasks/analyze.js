@@ -1,88 +1,32 @@
-let file;
+/*jshint globalstrict:false, strict:false, sub: true */
+/*global ARGUMENTS, print, arango */
+exports.name = "analyze";
+exports.group= "analyze tasks";
+exports.args = [ 
+  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" } 
+];
+exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
+exports.description = "Performs health analysis on your cluster and produces input files for other cleanup tasks.";
+exports.selfTests = ["arango", "db"];
+exports.requires = "3.3.23 - 3.5.99";
+exports.info = `
+Runs the analyze task against a cluster. It will create files and print
+commands to fix some known problems like the removal of zombies or dead
+primaries or creation of missing system collections.
+`;
 
-if (0 < ARGUMENTS.length) {
-  file = ARGUMENTS[0];
-}
-
-(function () {
+exports.run = function(extra, args) {
   // imports
   const fs = require('fs');
   const _ = require('underscore');
-  const AsciiTable = require('./ascii-table');
+  const AsciiTable = require('../3rdParty/ascii-table');
+  const helper = require('../helper.js');
 
-  const printGood = (msg) => {
-    print('Good: ' + msg);
-    print();
-  };
-  
-  const printBad = (msg) => {
-    // blink blink blink
-    print('Bad: ' + msg);
-    print();
-  };
-  
-  let dump;
+  const printGood = helper.printGood;
+  const printBad = helper.printBad;
 
-  if (file) {
-    print("Using dump file '" + file + "'");
-
-    dump = JSON.parse(fs.read(file));
-
-    if (Array.isArray(dump)) {
-      dump = dump[0];
-    } else {
-      dump = dump.agency;
-    }
-  } else {
-    if (db === undefined) {
-      print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
-      return;
-    }
-
-    try {
-      // try to find out the hard way if we are a 3.3 or 3.4 client
-      let stringify = false;
-      try {
-        let ArangoError = require('@arangodb').ArangoError;
-        try {
-          arango.POST('/_api/agency/read', [["/"]]);
-        } catch (err) {
-          if (err instanceof ArangoError && err.errorNum === 10) {
-            // bad parameter - wrong syntax
-            stringify = true;
-          }
-        }
-      } catch (err) {
-      }
-
-      let role = db._version(true).details.role;
-      if (role === undefined) {
-        print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against the leader agent.");
-        role = "AGENT";
-      }
-
-      if (role === "AGENT") {
-        let payload = [["/"]];
-        if (stringify) {
-          payload = JSON.stringify(payload);
-        }
-        let agency = arango.POST('/_api/agency/read', payload);
-
-        if (agency.code === 307) {
-          print("you need to connect to the leader agent");
-          return;
-        }
-
-        dump = agency[0];
-      } else {
-        print("you need to connect to the leader agent, not a " + role);
-        return;
-      }
-    } catch (e) {
-      print("FATAL: " + e);
-      return;
-    }
-  }
+  const parsedFile = helper.getValue("agency-dump", args);
+  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
 
   let extractPrimaries = function (info, dump) {
     let primariesAll = {};
@@ -140,7 +84,7 @@ if (0 < ARGUMENTS.length) {
 
   const recursiveMapPrinter = (map) => {
     if (map instanceof Map) {
-      const res = {}
+      const res = {};
       for (let [k,v] of map) {
         res[k] = recursiveMapPrinter(v);
       }
@@ -148,7 +92,7 @@ if (0 < ARGUMENTS.length) {
     } else if (map instanceof Array) {
       return map.map(v => recursiveMapPrinter(v));
     } else if (map instanceof Object) {
-      const res = {}
+      const res = {};
       for (let [k,v] of Object.entries(map)) {
         res[k] = recursiveMapPrinter(v);
       }
@@ -297,7 +241,7 @@ if (0 < ARGUMENTS.length) {
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
             if (!info.primaries.hasOwnProperty(servers[i])) {
-              if (i == 0) {
+              if (i === 0) {
                 info.leaderOnDeadServer.push({ db, name, shard, server: servers[i], servers });
               } else {
                 info.followerOnDeadServer.push({ db, name, shard, server: servers[i], servers });
@@ -354,8 +298,8 @@ if (0 < ARGUMENTS.length) {
         for (const [shard, servers] of Object.entries(shards)) {
           try {
             const curServers = currentCollections[db][cid][shard].servers;
-            myPlan.push({shard, servers})
-            myCurrent.push({shard, servers: curServers})
+            myPlan.push({shard, servers});
+            myCurrent.push({shard, servers: curServers});
             if (curServers[0] !== servers[0]) {
               unplannedLeader.add({cid, shard, search});
             }
@@ -399,7 +343,7 @@ if (0 < ARGUMENTS.length) {
     let infected = false;
     if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
       printBad('Your cluster has collections with dead leader and no insync follower');
-      
+
       const table = new AsciiTable('Collections with deadLeader and no-insync Follower');
       table.setHeading('CID', 'Shard', 'DistributeLike');
       for (const {cid, shard, search} of noInsyncAndDeadLeader) {
@@ -442,13 +386,14 @@ if (0 < ARGUMENTS.length) {
             }
           }
         }
-        
+
         const sortedCandidates = [...candidates.entries()].sort((l, r) => l[1].length > r[1].length);
-        print("List of potential failover candidates, first has most in sync:")
+        print("List of potential failover candidates, first has most in sync:");
         for (const [c, list] of sortedCandidates) {
           const missing = _.without(allShards, ...list);
           print(`Failover to ${c} insync: ${JSON.stringify(list)}, please check state of ${JSON.stringify(missing)}`);
-          print(`If you want to failover to this server use: ./cleanup/forceFailover.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('forceFailover.json')} ${c} ${search} ${shardIndex}`)
+          print("If you want to failover to this server run the `force-forceover` task against the leader AGENT, e.g.:");
+          print(` ./debugging/index.js <options> force-failover ${fs.makeAbsolute('forceFailover.json')} ${c} ${search} ${shardIndex}`);
         }
         clonedGroups.set(search, shardGroups.get(search));
       }
@@ -621,9 +566,8 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("zombies.json", JSON.stringify(output));
-
-      print("To remedy the zombies issue please run the following command:");
-      print(`./cleanup/remove-zombies.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('zombies.json')}`);
+      print("To remedy the zombies issue please run the task `remove-zombies` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombies ${fs.makeAbsolute('zombies.json')}`);
       print();
     }
   };
@@ -691,8 +635,8 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("dead-primaries.json", JSON.stringify(output));
-      print("To remedy the dead primaries issue please run the following command:");
-      print(`./cleanup/remove-dead-primaries.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('dead-primaries.json')}`);
+      print("To remedy the dead primaries issue please run the task `remove-dead-primaries` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-dead-primaries ${fs.makeAbsolute('dead-primaries.json')}`);
       print();
     }
   };
@@ -734,12 +678,12 @@ if (0 < ARGUMENTS.length) {
       });
 
       fs.write("skeleton-databases.json", JSON.stringify(output));
-      print("To remedy the skeleton databases issue please run the following command:");
-      print(`./cleanup/remove-skeleton-databases.sh <all options you pass to analyze.sh> ${fs.makeAbsolute('skeleton-databases.json')}`);
+      print("To remedy the skeleton databases issue please run the task `remove-skeleton-databases` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-skeleton-databases ${fs.makeAbsolute('skeleton-databases.json')}`);
       print();
     }
   };
-  
+
   let extractMissingCollections = function (info) {
     info.missingCollections = [];
 
@@ -762,7 +706,7 @@ if (0 < ARGUMENTS.length) {
       }
     });
   };
-  
+
   let printMissingCollections = function (info) {
     if (info.missingCollections.length > 0) {
       printBad('Your cluster is missing relevant system collections:');
@@ -780,75 +724,74 @@ if (0 < ARGUMENTS.length) {
       return false;
     }
   };
-  
+
   let saveMissingCollections = function (info) {
     if (info.missingCollections.length > 0) {
       let output = info.missingCollections;
 
       fs.write("missing-collections.json", JSON.stringify(output));
-      print("To remedy the missing collections issue please run the following command AGAINST A COORDINATOR:");
-      print(`./cleanup/add-missing-collections.sh <options> ${fs.makeAbsolute('missing-collections.json')}`);
+      print("To remedy the missing collections issue please run the task `create-missing-collections` AGAINST A COORDINATOR, e.g.:");
+      print(` ./debugging/index.js <options> create-missing-collections ${fs.makeAbsolute('missing-collections.json')}`);
       print();
     }
   };
 
- let extractOutOfSyncFollowers = (info, dump) => {
-   const planCollections = dump.arango.Plan.Collections;
-   const currentCollections = dump.arango.Current.Collections;
-   const compareFollowers = (plan, current) => {
-     // If leaders are not equal we are out of sync.
-     if(plan[0] != current[0]) {
-       return false;
-     }
-     if (plan.length === 1) {
-       // we have not even requested a follower
-       return false;
-     }
-     for (let i = 1; i < plan.length; ++i) {
-       const other = current.indexOf(plan[i]);
-       if (other < 1) {
-         return false;
-       }
-     }
-     return true;
-   };
-   info.outOfSyncFollowers = [];
-   for (const [db, collections] of Object.entries(planCollections)) {
-     if (!currentCollections.hasOwnProperty(db)) {
-       // database skeleton or  so, don't care
-       continue;
-     }
-     for (const [name, col] of Object.entries(collections)) {
-       const { shards } = col;
-       if (!shards || Object.keys(shards).length === 0) {
-         continue;
-       }
-       for (const [shard, servers] of Object.entries(shards)) {
-         try {
-           const current = currentCollections[db][name][shard].servers;
-           if (!compareFollowers(servers, current)) {
-             info.outOfSyncFollowers.push({
-               db, name, shard, servers, current
-             });
-           }
-         } catch (e) {}
-       }
-
- 
+  let extractOutOfSyncFollowers = (info, dump) => {
+    const planCollections = dump.arango.Plan.Collections;
+    const currentCollections = dump.arango.Current.Collections;
+    const compareFollowers = (plan, current) => {
+      // If leaders are not equal we are out of sync.
+      if(plan[0] !== current[0]) {
+        return false;
       }
-   }
- };
- 
+      if (plan.length === 1) {
+        // we have not even requested a follower
+        return true;
+      }
+      for (let i = 1; i < plan.length; ++i) {
+        const other = current.indexOf(plan[i]);
+        if (other < 1) {
+          return false;
+        }
+      }
+      return true;
+    };
+    info.outOfSyncFollowers = [];
+    for (const [db, collections] of Object.entries(planCollections)) {
+      if (!currentCollections.hasOwnProperty(db)) {
+        // database skeleton or  so, don't care
+        continue;
+      }
+      for (const [name, col] of Object.entries(collections)) {
+        const { shards } = col;
+        if (!shards || Object.keys(shards).length === 0) {
+          continue;
+        }
+        for (const [shard, servers] of Object.entries(shards)) {
+          try {
+            const current = currentCollections[db][name][shard].servers;
+            if (!compareFollowers(servers, current)) {
+              info.outOfSyncFollowers.push({
+                db, name, shard, servers, current
+              });
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  };
+
   const printOutOfSyncFollowers = (info) => {
     const { outOfSyncFollowers } = info;
     const counters = new Map();
     if (outOfSyncFollowers.length > 0) {
+      printBad('Your cluster has collections where followers are out of sync');
       {
         const table = new AsciiTable('Out of sync followers');
         table.setHeading('Database', 'CID', 'Shard', 'Planned', 'Real');
-        for (const oosFollower of outOfSyncFollowers ) {
+        for (const oosFollower of outOfSyncFollowers) {
           table.addRow(oosFollower.db, oosFollower.name, oosFollower.shard, oosFollower.servers, oosFollower.current);
-          counters.set(oosFollower.servers[0], (counters.get(oosFollower.servers[0]) || 0) + 1)
+          counters.set(oosFollower.servers[0], (counters.get(oosFollower.servers[0]) || 0) + 1);
         }
         print(table.toString());
       }
@@ -862,7 +805,7 @@ if (0 < ARGUMENTS.length) {
       }
       return true;
     } else {
-      print('Your cluster does not have collections where followers are out of sync');
+      printGood('Your cluster does not have collections where followers are out of sync');
       return false;
     }
   };
@@ -890,7 +833,7 @@ if (0 < ARGUMENTS.length) {
   print();
   infected = printPrimaryShards(info) || infected;
   print();
-  
+
   infected = printZombies(info) || infected;
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
@@ -898,7 +841,7 @@ if (0 < ARGUMENTS.length) {
   infected = printEmptyDatabases(info) || infected;
   infected = printMissingCollections(info) || infected;
   infected = printOutOfSyncFollowers(info) || infected;
-  
+
   print();
 
   infected = printDistributionGroups(info) || infected;
@@ -915,5 +858,4 @@ if (0 < ARGUMENTS.length) {
   } else {
     printGood('Did not detect any issues in your cluster');
   }
-
-}());
+};

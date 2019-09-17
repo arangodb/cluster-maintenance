@@ -1,78 +1,29 @@
-let file;
+/*jshint globalstrict:false, strict:false, sub: true */
+/*global ARGUMENTS, print, arango */
+exports.name = "show-move-shards";
+exports.group = "move shard tasks";
+exports.args = [ 
+  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" } 
+];
+exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
+exports.description = "Allows to inspect shards being moved.";
+exports.selfTests = ["arango", "db"];
+exports.requires = "3.3.23 - 3.5.99";
+exports.info = `
+Allows to track progress of shard movement.
+`;
 
-if (0 < ARGUMENTS.length) {
-  file = ARGUMENTS[0];
-}
-
-;
-(function() {
-  // imports
+exports.run = function(extra, args) {
+  // modules
+  const helper = require('../helper.js');
   const fs = require('fs');
   const _ = require('underscore');
-  const AsciiTable = require('./ascii-table');
+  const AsciiTable = require('../3rdParty/ascii-table');
 
-  let dump;
-
-  if (file) {
-    print("Using dump file '" + file + "'");
-
-    dump = JSON.parse(fs.read(file));
-
-    if (Array.isArray(dump)) {
-      dump = dump[0];
-    } else {
-      dump = dump.agency;
-    }
-  } else {
-    if (db === undefined) {
-      print("FATAL: database object 'db' not found. Please make sure this script is executed against the leader agent.");
-      return;
-    }
-
-    try {
-      // try to find out the hard way if we are a 3.3 or 3.4 client
-      let stringify = false;
-      try {
-        let ArangoError = require('@arangodb').ArangoError;
-        try {
-          arango.POST('/_api/agency/read', [["/"]]);
-        } catch (err) {
-          if (err instanceof ArangoError && err.errorNum === 10) {
-            // bad parameter - wrong syntax
-            stringify = true;
-          }
-        }
-      } catch (err) {
-      }
-
-      let role = db._version(true).details.role;
-      if (role === undefined) {
-        print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against an agent.");
-        role = "AGENT";
-      }
-
-      if (role === "AGENT") {
-        let payload = [["/"]];
-        if (stringify) {
-          payload = JSON.stringify(payload);
-        }
-        let agency = arango.POST('/_api/agency/read', payload);
-
-        if (agency.code === 307) {
-          print("you need to connect to the leader agent");
-          return;
-        }
-
-        dump = agency[0];
-      } else {
-        print("you need to connect to the leader agent, not a " + role);
-        return;
-      }
-    } catch (e) {
-      print("FATAL: " + e);
-      return;
-    }
-  }
+  // variables
+  const printGood = helper.printGood;
+  const parsedFile = helper.getValue("agency-dump", args);
+  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
 
   let extractTodos = function(info, dump) {
     const target = dump.arango.Target;
@@ -235,4 +186,4 @@ if (0 < ARGUMENTS.length) {
   printToDoJobs(info);
   printPendingJobs(info);
   printTodos(info);
-}());
+};

@@ -1,45 +1,25 @@
-let file;
+/*jshint globalstrict:false, strict:false, sub: true */
+/*global ARGUMENTS, print, arango, db */
+exports.name = "create-missing-collections";
+exports.group= "cleanup tasks";
+exports.args = [ { "name" : "missing-collections-file", "optional" : false, "type": "jsonfile"} ];
+exports.args = [ 
+  { "name" : "missing-collections-file", "optional" : false, "type": "jsonfile", "description": "collections file created by analyze task" } 
+];
+exports.args_arangosh = " --server.endpoint COORDINATOR";
+exports.description = "Adds missing collections found by the analyze task.";
+exports.selfTests = ["arango", "db", "coordinatorConnection"];
+exports.requires = "3.3.23 - 3.5.99";
+exports.info = `
+Adds missing collections found by the analyze task.
+`;
 
-(function() {
-  if (0 < ARGUMENTS.length) {
-    file = ARGUMENTS[0];
-  } else {
-    print("usage: add-missing-collections.sh --server.endpoint COORDINATOR MISSING-COLLECTIONS-FILE");
-    return;
-  }
-
-  if (db === undefined) {
-    print("FATAL: database object 'db' not found. Please make sure this script is executed against a coordinator.");
-    return;
-  }
-
-  try {
-    let role = db._version(true).details.role;
-
-    if (role === undefined) {
-      // potentially ArangoDB 3.3
-      print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against a coordinator.");
-    } else if (role !== "COORDINATOR") {
-      print("you need to connect to a coordinator, not a " + role);
-      return;
-    }
-  } catch (e) {
-    print("FATAL: " + e);
-    return;
-  }
-
+exports.run = function(extra, args) {
   // imports
   const fs = require('fs');
   const _ = require('underscore');
-
-  let missingCollections;
-
-  try {
-    missingCollections = JSON.parse(fs.read(file));
-  } catch (e) {
-    print("FATAL: " + e);
-    return;
-  }
+  const helper = require('../helper.js');
+  let missingCollections = helper.getValue("missing-collections-file", args);
 
   try {
     _.each(missingCollections, function(entry) {
@@ -81,4 +61,4 @@ let file;
   } finally {
     db._useDatabase("_system");
   }
-}());
+};
