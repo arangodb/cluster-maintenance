@@ -146,6 +146,7 @@ exports.run = function (extra, args) {
     if (Object.keys(sharding).length > 0) {
       return sharding;
     } else {
+      print("Debug: Empty sharding for collection " + collection.name)
       return;
     }
   };
@@ -182,6 +183,7 @@ exports.run = function (extra, args) {
     if (!shardBucketList[distributeShardsLike]) {
       shardBucketList[distributeShardsLike] = {
         followers: [],
+        leaderDB: distributeShardsLike,
         replicationFactor: collectionReplicationFactorMap[distributeShardsLike],
         numberOfShards: collection.numberOfShards,
         shardCollectionTotalAmount: collectionReplicationFactorMap[distributeShardsLike] * collection.numberOfShards
@@ -190,12 +192,14 @@ exports.run = function (extra, args) {
     if (!shardBucketList[distributeShardsLike].followers.includes(collection.name)) {
       shardBucketList[distributeShardsLike].followers.push(collection.name);
     }
+    /*
     let sharding = buildShardDistribution(collection, distributeShardsLike);
     if (Object.keys(sharding).length > 0) {
       return sharding;
     } else {
+      print("Debug: Empty sharding for collection " + collection.name)
       return;
-    }
+    }*/
   };
 
   // calculate some environment properties here
@@ -222,10 +226,11 @@ exports.run = function (extra, args) {
     }
   };
 
-  let calulateCollectionScore = function (collectionName, dbServerName) {
+  let calulateCollectionScore = function (analysisData, collectionName, dbServerName) {
     // tries to calculate the distribution based on collection shards
     // TODO: Next step will also be to verify the distribution regarding leader <-> follower
     // No server should have leaders/followers only.
+    // skip collections which do have distributeShardsLike (calculation differs)
 
     let score = -1;
     let leaders = 0;
@@ -235,20 +240,14 @@ exports.run = function (extra, args) {
     _.each(analysisData[collectionName], function (shard) {
       if (shard.distribution[0] === dbServerName) {
         leaders++;
+        totalShards++;
       } else {
         if (shard.distribution.indexOf(dbServerName) > 0) {
           followers++;
-        } else {
-          // we're hitting the distributeShardsLike Case here
-          print("FOUND ANOTHER CASE");
-          print("Collection: " + collectionName);
-          print("Server: " + dbServerName);
-          // print(shard);
+          totalShards++;
         }
       }
-      totalShards++;
     });
-
 
     let shardDistributeInfo = calculateShardDistributionInformation(
       totalShards, collectionName, leaders, followers
@@ -282,7 +281,7 @@ exports.run = function (extra, args) {
       score[dbServerName] = {};
 
       _.each(analysisData, function (collection, collectionName) {
-        let info = calulateCollectionScore(collectionName, dbServerName);
+        let info = calulateCollectionScore(analysisData, collectionName, dbServerName);
         let localScore = info[0];
         let distribution = info[1];
 
@@ -307,15 +306,15 @@ exports.run = function (extra, args) {
         }
 
         if (collection.distributeShardsLike) {
-          // found followers
-          let fResult = addFollowerCollection(collection);
-
+          // found followers, add them to the bucket
+          addFollowerCollection(collection);
+          /*
           if (fResult !== null && fResult !== undefined) {
             if (!resultData[collection.name]) {
               resultData[collection.name] = {};
             }
             resultData[collection.name] = fResult;
-          }
+          }*/
         } else {
           // found leaders
           let lResult = addLeaderCollection(collection);
@@ -337,12 +336,19 @@ exports.run = function (extra, args) {
     _.each(shardBucketList, function (info, masterCollection) {
       info.shardBucketTotalAmount = info.followers.length * info.numberOfShards * info.replicationFactor;
     });
-    // print(shardBucketList);
   };
 
   function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
   }
+
+  let isBucketMaster = function (collectionName) {
+    if (shardBucketList[collectionName]) {
+      return true;
+    } else {
+      return false;
+    }
+  };
 
   let getCandidatesToOptimize = function (score) {
     /*
@@ -357,6 +363,9 @@ exports.run = function (extra, args) {
       _.each(collections, function (collection, collectionName) {
         if (collection.score <= MIN_ALLOWED_SCORE) {
           if (!candidates[collectionName]) {
+            // are we a bucket master?
+            let bucketMaster = isBucketMaster(collectionName);
+
             candidates[collectionName] = {
               bestScore: null,
               bestAmountOfLeaders: null,
@@ -366,7 +375,8 @@ exports.run = function (extra, args) {
               weakestScore: null,
               weakestAmountOfLeaders: null,
               weakestAmountOfFollowers: null,
-              weakestDatabaseServer: null
+              weakestDatabaseServer: null,
+              isBucketMaster: bucketMaster
             };
           }
 
@@ -397,7 +407,7 @@ exports.run = function (extra, args) {
   };
 
   moveSingleShardLocally = function (shardId, fromDBServer, toDBServer,
-                                     collectionName, isLeader, analysisData) {
+                                     collectionName, isLeader, analysisData, isBucketMaster) {
     // move shards in our local state only
     // debug:
     // print("Moving: " + shardId + " from: " + fromDBServer + " to: " + toDBServer + "(leader: " + isLeader + ")");
@@ -455,39 +465,102 @@ exports.run = function (extra, args) {
     }
   };
 
+  let getTotalAmountOfShards = function (databaseServer, analysisData) {
+    let totalShards = 0;
+
+    _.each(analysisData, function(shards, collectionName) {
+      if (isBucketMaster(collectionName)) {
+        // special calculation
+        // check if distributeShardsLike collection is holder of collection
+        let found = false;
+        _.each(shards, function (shard) {
+          if (shard.distribution.includes(databaseServer)) {
+            // TODO: Check if that one here is correct, not 100% sure.
+            found = true;
+          }
+        });
+        if (found) {
+          totalShards = totalShards + (shardBucketList[collectionName].shardBucketTotalAmount / shardBucketList[collectionName].replicationFactor);
+        }
+      } else {
+        _.each(shards, function (shard) {
+          if (shard.distribution.includes(databaseServer)) {
+            totalShards = totalShards++;
+          }
+        });
+      }
+    });
+
+    return totalShards;
+  };
+
   // this function will move shards locally around and then return a new state
   let moveShardsLocally = function (candidates, analysisData) {
     // first detect the amount of what (leader/follower) to move
     _.each(candidates, function (stats, collectionName) {
+      print("Candidate collection name: " + collectionName);
       let amountOfLeadersToMove = 0;
       let amountOfFollowersToMove = 0;
+      let moveBucket = false;
 
-      // info: division by two because perfect amount is sum of leader+follower shards
-      if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
-        // we might need to move leaders
-        if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
-          amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+      // special condition:
+      // if we are a masterBucket collection, we need to take a look at the global
+      // shard distribution per database before we start moving.
+      if (stats.isBucketMaster) {
+        print("WE FOUND A BUCKET MASTER !! - Name: " + collectionName);
+        let amountOfTotalShardsOfBestServer = getTotalAmountOfShards(
+            stats.bestDatabaseServer, analysisData, true
+        );
+        let amountOfTotalShardsOfWeakestServer = getTotalAmountOfShards(
+            stats.weakestDatabaseServer, analysisData, true
+        );
+
+        print("Total amount of best: " + amountOfTotalShardsOfBestServer);
+        print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
+
+        if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
+           let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
+           if (shardDifference > shardBucketList[collectionName].shardBucketTotalAmount) {
+             // TODO: Check if we could calculate more precise
+             moveBucket = true;
+           } else {
+             // no change - we are not moving the bucket, quick exit: return same state
+             return;
+           }
+        } else {
+          // no change - we are not moving the bucket, quick exit: return same state
+          return;
+        }
+      } else {
+        // calculate a regular collection
+        if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
+          // we might need to move leaders
+          if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
+            amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+          }
+        }
+        if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
+          // we need to move followers
+          amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
+        }
+
+        if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
+          // no change, quick exit: return same state
+          return;
         }
       }
-      if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
-        // we need to move followers
-        amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
-      }
 
-      if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
-        // no change, quick exit: return same state
-        return;
-      }
 
       // now iterate through current state and start moving (local only!)
       // TODO: optimization, do not use each, quick exit not possible
+
       _.each(analysisData[collectionName], function (shard, shardId) {
         if (shard.distribution[0] === stats.bestDatabaseServer) {
           // we found the best db server as leader for the current shard
-          if (amountOfLeadersToMove > 0) {
+          if (amountOfLeadersToMove > 0 || moveBucket) { // TODO: CHECK
             let result = moveSingleShardLocally(
-              shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
-              collectionName, true, analysisData
+                shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                collectionName, true, analysisData, stats.isBucketMaster
             );
             if (result.success) {
               analysisData = result.data;
@@ -500,10 +573,10 @@ exports.run = function (extra, args) {
           followerDistribution.shift(); // remove the leader
           if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
             // we found dbserver as follower
-            if (amountOfFollowersToMove > 0) {
+            if (amountOfFollowersToMove > 0 || moveBucket) { // TODO: CHECK
               let result = moveSingleShardLocally(
-                shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
-                collectionName, false, analysisData
+                  shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                  collectionName, false, analysisData, stats.isBucketMaster
               );
               if (result.success) {
                 analysisData = result.data;
@@ -540,6 +613,16 @@ exports.run = function (extra, args) {
   let analysisData = generateAnalysis(initAgencyCollections);
 
   /*
+   *  Section Score:
+   *    Is able to calculate a score for a 'analysisData' object.
+   *
+   *  Builds:
+   *    The result will be stored in the global variable: 'analysisData'
+   */
+  let scores = [];
+  scores.push(calculateCollectionsScore(analysisData));
+
+  /*
    *  Section Extend Distribution Analysis:
    *    Extend information about master collections
    *
@@ -554,18 +637,7 @@ exports.run = function (extra, args) {
    *    }
    */
   extendShardBucketList();
-  print(shardBucketList);
-  //print(analysisData);
-
-  /*
-   *  Section Score:
-   *    Is able to calculate a score for a 'analysisData' object.
-   *
-   *  Builds:
-   *    The result will be stored in the global variable: 'analysisData'
-   */
-  let scores = [];
-  scores.push(calculateCollectionsScore(analysisData));
+  // print(shardBucketList);
 
   print("=== Scores ===");
   // print(scores);
@@ -597,6 +669,9 @@ exports.run = function (extra, args) {
   optimizedIterations.push(moveShardsLocally(candidates, analysisData));
   scores.push(calculateCollectionsScore(analysisData));
 
+  // the looping begins: top functions could join here as well, just wanted to keep
+  // sections to better debug and comment things. can be changed later.
+
   for (var i = 0; i < MAX_ITERATIONS; i++) {
     candidates = getCandidatesToOptimize(scores[scores.length - 1]);
     optimizedIterations.push(moveShardsLocally(candidates, optimizedIterations[i]));
@@ -607,7 +682,7 @@ exports.run = function (extra, args) {
   // print(scores[scores.length - 1]);
 
   print("Actions done: " + jobHistory.length);
-  print("Iterations Done: " + MAX_ITERATIONS);
+  print("Iterations Done: " + MAX_ITERATIONS + " (+1)");
   /*
    *  Section Cleanup History
    *    Remove duplicates, unnecessary steps etc.
@@ -624,20 +699,24 @@ exports.run = function (extra, args) {
    *    Write moveShards plan to file.
    */
   // we need to apply jobHistory to file
+  // TODO: Still needed. We can take the functionality from the other task js file.
 
   print("=== Debug ===");
   print("Available DBServers: " + info.amountOfDatabaseServers);
   // print(jobHistory);
-  // print(analysisData);
-  // print(shardBucketList)
   _.each(initAgencyCollections, function (collections) {
     _.each(collections, function (collection, cId) {
       //print(collection.name);
-      if (collection.name === "_from_ScanIndicatorAffectedEdge") {
+      if (collection.name === "TrendingThreats") {
       //  print("===========");
-        // print(collection);
+         // print(collection);
     //    print("Sharding after: " + collectionNamesMap[collection.distributeShardsLike]);
       }
     });
   });
+
+  //  print(scores);
+  // print(shardBucketList);
+  // print(analysisData);
+  // print(scores);
 };
