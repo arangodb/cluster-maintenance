@@ -210,6 +210,7 @@ exports.run = function (extra, args) {
 
   // calculate helper methods
   let calculateShardDistributionInformation = function (totalShards, collectionName, leaders, followers) {
+    print("Total " + totalShards)
     let multipliedTotalShards = totalShards * collectionReplicationFactorMap[collectionName];
     let perfectAmountOfLeaders = Math.round(totalShards / info.amountOfDatabaseServers);
     let perfectAmountOfShards = multipliedTotalShards / info.amountOfDatabaseServers;
@@ -253,11 +254,12 @@ exports.run = function (extra, args) {
       totalShards, collectionName, leaders, followers
     );
 
+    print(shardDistributeInfo);
     let shardsWeHave = shardDistributeInfo.shardTotalAmount;
-    if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound) {
+    if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
       // we are in that range of lowerBound <-> upperBound, almost perfect distribution
       score = 1;
-    } else if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards) {
+    } else if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // perfect distribution
       score = 1;
     } else if (shardsWeHave > shardDistributeInfo.perfectAmountOfShards) {
@@ -359,6 +361,7 @@ exports.run = function (extra, args) {
      */
 
     let candidates = {};
+    print(score);
     _.each(score, function (collections, databaseServerName) {
       _.each(collections, function (collection, collectionName) {
         if (collection.score <= MIN_ALLOWED_SCORE) {
@@ -407,7 +410,7 @@ exports.run = function (extra, args) {
   };
 
   moveSingleShardLocally = function (shardId, fromDBServer, toDBServer,
-                                     collectionName, isLeader, analysisData, isBucketMaster) {
+                                     collectionName, isLeader, analysisData) {
     // move shards in our local state only
     // debug:
     // print("Moving: " + shardId + " from: " + fromDBServer + " to: " + toDBServer + "(leader: " + isLeader + ")");
@@ -415,6 +418,7 @@ exports.run = function (extra, args) {
     let success = false;
 
     if (fromDBServer == toDBServer) {
+      print("Moving to the same server makes no sense.")
       // makes no sense to do this
       return {
         success: success,
@@ -422,6 +426,7 @@ exports.run = function (extra, args) {
       }
     }
 
+    print("MOVE");
     // modifiy local state
     if (isLeader) {
       // remove old leader, add new one
@@ -448,6 +453,7 @@ exports.run = function (extra, args) {
         }
       }
     }
+    print(success);
 
     if (success) {
       // persist action history in local jobHistory
@@ -695,7 +701,6 @@ exports.run = function (extra, args) {
 
   print("=== Debug ===");
   print("Available DBServers: " + info.amountOfDatabaseServers);
-  // print(jobHistory);
   _.each(initAgencyCollections, function (collections) {
     _.each(collections, function (collection, cId) {
       //print(collection.name);
@@ -707,8 +712,8 @@ exports.run = function (extra, args) {
     });
   });
 
-  //  print(scores);
+  // print(scores);
   // print(shardBucketList);
   // print(analysisData);
-  // print(scores);
+   print(scores);
 };
