@@ -498,7 +498,6 @@ exports.run = function (extra, args) {
   let moveShardsLocally = function (candidates, analysisData) {
     // first detect the amount of what (leader/follower) to move
     _.each(candidates, function (stats, collectionName) {
-      print("Candidate collection name: " + collectionName);
       let amountOfLeadersToMove = 0;
       let amountOfFollowersToMove = 0;
       let moveBucket = false;
@@ -683,13 +682,6 @@ exports.run = function (extra, args) {
 
   print("Actions done: " + jobHistory.length);
   print("Iterations Done: " + MAX_ITERATIONS + " (+1)");
-  /*
-   *  Section Cleanup History
-   *    Remove duplicates, unnecessary steps etc.
-   *
-   *  Builds:
-   *    Write moveShards plan to file.
-   */
 
   /*
    *  Section Create Plan:
