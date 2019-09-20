@@ -721,14 +721,11 @@ exports.run = function (extra, args) {
 
 
         // now iterate through current state and start moving (local only!)
-        // TODO: optimization, do not use each, quick exit not possible
-        // for (let [databaseName, database] of Object.entries(analysisData))
-
-        _.each(analysisData, function (database, databaseName) {
-          _.each(database[collectionName], function (shard, shardId) {
+        for (let [databaseName, database] of Object.entries(analysisData)) {
+          for (let [shardId, shard] of Object.entries(database[collectionName])) {
             if (shard.distribution[0] === stats.bestDatabaseServer) {
               // we found the best db server as leader for the current shard
-              if (amountOfLeadersToMove > 0 || moveBucket) { // TODO: CHECK exit
+              if (amountOfLeadersToMove > 0 || moveBucket) {
                 let result = moveSingleShardLocally(
                   shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
                   collectionName, true, analysisData, databaseName
@@ -742,7 +739,7 @@ exports.run = function (extra, args) {
               // we might have a follower shard
               if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
                 // we found dbserver as follower
-                if (amountOfFollowersToMove > 0 || moveBucket) { // TODO: CHECK exit
+                if (amountOfFollowersToMove > 0 || moveBucket) {
                   let result = moveSingleShardLocally(
                     shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
                     collectionName, false, analysisData, databaseName
@@ -754,8 +751,12 @@ exports.run = function (extra, args) {
                 }
               }
             }
-          });
-        });
+
+            if (!moveBucket && amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
+              break;
+            }
+          }
+        }
       });
     });
 
