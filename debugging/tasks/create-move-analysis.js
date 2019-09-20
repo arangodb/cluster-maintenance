@@ -37,7 +37,7 @@ exports.run = function (extra, args) {
   const file = helper.getValue("dump-file", args);
   const dump = helper.getAgencyDumpFromObjectOrAgency(file);
   const agencyPlan = dump.arango.Plan;
-  const agencyDatabases = agencyPlan.Databases;
+  // const agencyDatabases = agencyPlan.Databases;
   const initAgencyCollections = agencyPlan.Collections;
   const health = dump.arango.Supervision.Health;
 
@@ -46,11 +46,11 @@ exports.run = function (extra, args) {
   const MAX_ITERATIONS = 2;
 
   // Analysis Data Format
-  // {
+  // { // TODO HEIKO update that one here
   //   leaderCollectionA: {
   //     followerCollectionX: {
-  //       s12: {nrFollowers: 10, nodes: [leader, follower1, follower2, ... ]}
-  //       s13: {nrFollowers: 10, nodes: [leader, follower1, follower2, ... ]}
+  //       s12: {nodes: [leader, follower1, follower2, ... ]}
+  //       s13: {nodes: [leader, follower1, follower2, ... ]}
   //     }
   //   },
   //   leaderCollectionB: {},
@@ -178,7 +178,6 @@ exports.run = function (extra, args) {
       });
     });
   };
-
   let setGlobalShard = function (info, shard) {
     let dbServer = shard.dbServer;
     let isLeader = shard.isLeader;
@@ -201,34 +200,6 @@ exports.run = function (extra, args) {
       info.shardsPrimary[dbServer].followers.push(shard);
     }
   };
-
-  // start helper functions
-  let getCountOfCurrentDatabaseServers = function () {
-    let count = 0;
-    _.each(health, function (info, serverName) {
-      if (serverName.substring(0, 4) === 'PRMR') {
-        // found dbserver
-        if (info.Status === 'GOOD') {
-          count++;
-        }
-      }
-    });
-    return count;
-  };
-
-  let getNamesOfCurrentDatabaseServers = function () {
-    let names = [];
-    _.each(health, function (info, serverName) {
-      if (serverName.substring(0, 4) === 'PRMR') {
-        // found dbserver
-        if (info.Status === 'GOOD') {
-          names.push(serverName);
-        }
-      }
-    });
-    return names;
-  };
-
   let extractPrimaries = function (info, dump) {
     let primariesAll = {};
     let primaries = {};
@@ -247,6 +218,32 @@ exports.run = function (extra, args) {
 
     info.primaries = primaries;
     info.primariesAll = primariesAll;
+  };
+
+  // start helper functions
+  let getCountOfCurrentDatabaseServers = function () {
+    let count = 0;
+    _.each(health, function (info, serverName) {
+      if (serverName.substring(0, 4) === 'PRMR') {
+        // found dbserver
+        if (info.Status === 'GOOD') {
+          count++;
+        }
+      }
+    });
+    return count;
+  };
+  let getNamesOfCurrentDatabaseServers = function () {
+    let names = [];
+    _.each(health, function (info, serverName) {
+      if (serverName.substring(0, 4) === 'PRMR') {
+        // found dbserver
+        if (info.Status === 'GOOD') {
+          names.push(serverName);
+        }
+      }
+    });
+    return names;
   };
 
   let isSystemCollection = function (collectionName) {
@@ -494,10 +491,6 @@ exports.run = function (extra, args) {
     });
   };
 
-  function onlyUnique(value, index, self) {
-    return self.indexOf(value) === index;
-  }
-
   let isBucketMaster = function (collectionName) {
     if (shardBucketList[collectionName]) {
       return true;
@@ -590,6 +583,7 @@ exports.run = function (extra, args) {
       // remove old leader, add new one
       if (analysisData[databaseName][collectionName][shardId].distribution.indexOf(toDBServer) > 0) {
         // we are already follower, move not allowed
+        print("THIS IS NOT ALLOWED TO HAPPEN")
       } else {
         analysisData[databaseName][collectionName][shardId].distribution.shift();
         analysisData[databaseName][collectionName][shardId].distribution.unshift(toDBServer);
@@ -729,12 +723,13 @@ exports.run = function (extra, args) {
 
         // now iterate through current state and start moving (local only!)
         // TODO: optimization, do not use each, quick exit not possible
+        // for (let [databaseName, database] of Object.entries(analysisData))
 
         _.each(analysisData, function (database, databaseName) {
           _.each(database[collectionName], function (shard, shardId) {
             if (shard.distribution[0] === stats.bestDatabaseServer) {
               // we found the best db server as leader for the current shard
-              if (amountOfLeadersToMove > 0 || moveBucket) { // TODO: CHECK
+              if (amountOfLeadersToMove > 0 || moveBucket) { // TODO: CHECK exit
                 let result = moveSingleShardLocally(
                   shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
                   collectionName, true, analysisData, databaseName
@@ -746,11 +741,9 @@ exports.run = function (extra, args) {
               }
             } else {
               // we might have a follower shard
-              let followerDistribution = _.clone(shard.distribution);
-              followerDistribution.shift(); // remove the leader
               if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
                 // we found dbserver as follower
-                if (amountOfFollowersToMove > 0 || moveBucket) { // TODO: CHECK
+                if (amountOfFollowersToMove > 0 || moveBucket) { // TODO: CHECK exit
                   let result = moveSingleShardLocally(
                     shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
                     collectionName, false, analysisData, databaseName
@@ -844,7 +837,7 @@ exports.run = function (extra, args) {
    *    The result of each iteration will be stored in optimizedIterations array
    */
   print("=== Optimizations ===");
-  let optimizedIterations = [];
+  let optimizedIterations = []; // TODO: We should consider removing this for better performance
   optimizedIterations.push(moveShardsLocally(candidates, analysisData));
   scores.push(calculateCollectionsScore(analysisData));
 
@@ -908,4 +901,5 @@ exports.run = function (extra, args) {
   // print(Object.keys(initAgencyCollections));
   // print(jobHistory);
   // print(agencyDatabases);
+  // print(analysisData);
 };
