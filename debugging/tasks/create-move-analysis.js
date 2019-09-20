@@ -348,6 +348,13 @@ exports.run = function (extra, args) {
     let multipliedTotalShards = totalShards * collectionReplicationFactorMap[collectionName];
     let perfectAmountOfLeaders = Math.round(totalShards / info.amountOfDatabaseServers);
     let perfectAmountOfShards = multipliedTotalShards / info.amountOfDatabaseServers;
+    let shardTotalAmount = leaders + followers;
+
+    let singleShardCollection = false;
+    if (shardTotalAmount === 1) {
+      // we have a single shard collection, mark it as one.
+      singleShardCollection = true;
+    }
 
     return {
       perfectAmountOfShards: perfectAmountOfShards,
@@ -357,7 +364,8 @@ exports.run = function (extra, args) {
       lowerBound: Math.floor(multipliedTotalShards / info.amountOfDatabaseServers),
       shardLeaderAmount: leaders,
       shardFollowerAmount: followers,
-      shardTotalAmount: leaders + followers
+      shardTotalAmount: shardTotalAmount,
+      singleShardCollection: singleShardCollection
     }
   };
 
