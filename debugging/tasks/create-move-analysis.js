@@ -655,105 +655,109 @@ exports.run = function (extra, args) {
   // this function will move shards locally around and then return a new state
   let moveShardsLocally = function (candidates, analysisData) {
 
-    // TODO: Currently it is random if a "bucket" or a "single shard" is moved
-    // TODO: We should first move buckets around, then single shards!
+      // TODO: Currently it is random if a "bucket" or a "single shard" is moved
+      // TODO: We should first move buckets around, then single shards!
 
-    // first detect the amount of what (leader/follower) to move
-    _.each(candidates, function (database, databaseName) {
-      _.each(database, function (stats, collectionName) {
-        let amountOfLeadersToMove = 0;
-        let amountOfFollowersToMove = 0;
-        let moveBucket = false;
+      // first detect the amount of what (leader/follower) to move
+      _.each(candidates, function (database, databaseName) {
+          _.each(database, function (stats, collectionName) {
+            let amountOfLeadersToMove = 0;
+            let amountOfFollowersToMove = 0;
+            let moveBucket = false;
 
-        // special condition:
-        // if we are a masterBucket collection, we need to take a look at the global
-        // shard distribution per database before we start moving.
-        if (stats.isBucketMaster) {
-          let amountOfTotalShardsOfBestServer = getTotalAmountOfShards(
-            stats.bestDatabaseServer, analysisData, true
-          );
-          let amountOfTotalShardsOfWeakestServer = getTotalAmountOfShards(
-            stats.weakestDatabaseServer, analysisData, true
-          );
-          // print("WE FOUND A BUCKET MASTER !! - Name: " + collectionName);
-          // print("Total amount of best: " + amountOfTotalShardsOfBestServer);
-          // print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
+            // special condition:
+            // if we are a masterBucket collection, we need to take a look at the global
+            // shard distribution per database before we start moving.
+            if (stats.isBucketMaster) {
+              let amountOfTotalShardsOfBestServer = getTotalAmountOfShards(
+                stats.bestDatabaseServer, analysisData, true
+              );
+              let amountOfTotalShardsOfWeakestServer = getTotalAmountOfShards(
+                stats.weakestDatabaseServer, analysisData, true
+              );
+              // print("WE FOUND A BUCKET MASTER !! - Name: " + collectionName);
+              // print("Total amount of best: " + amountOfTotalShardsOfBestServer);
+              // print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
 
-          if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
-            let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
-            if (shardDifference > shardBucketList[collectionName].shardBucketTotalAmount) {
-              // TODO: Move bucket calculation - Check if we could calculate more precise
-              moveBucket = true;
-            } else {
-              // no change - we are not moving the bucket, quick exit: return same state
-              return;
-            }
-          } else {
-            // no change - we are not moving the bucket, quick exit: return same state
-            return;
-          }
-        } else {
-          // calculate a regular collection
-          if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
-            // we might need to move leaders
-            if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
-              amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
-            }
-          }
-          if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
-            // we need to move followers
-            amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
-          }
-
-          if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
-            // no change, quick exit: return same state
-            return;
-          }
-        }
-
-
-        // now iterate through current state and start moving (local only!)
-        for (let [databaseName, database] of Object.entries(analysisData)) {
-          for (let [shardId, shard] of Object.entries(database[collectionName])) {
-            if (shard.distribution[0] === stats.bestDatabaseServer) {
-              // we found the best db server as leader for the current shard
-              if (amountOfLeadersToMove > 0 || moveBucket) {
-                let result = moveSingleShardLocally(
-                  shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
-                  collectionName, true, analysisData, databaseName
-                );
-                if (result.success) {
-                  analysisData = result.data;
-                  amountOfLeadersToMove--;
+              if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
+                let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
+                if (shardDifference > shardBucketList[collectionName].shardBucketTotalAmount) {
+                  // TODO: Move bucket calculation - Check if we could calculate more precise
+                  moveBucket = true;
+                } else {
+                  // no change - we are not moving the bucket, quick exit: return same state
+                  return;
                 }
+              } else {
+                // no change - we are not moving the bucket, quick exit: return same state
+                return;
               }
             } else {
-              // we might have a follower shard
-              if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
-                // we found dbserver as follower
-                if (amountOfFollowersToMove > 0 || moveBucket) {
-                  let result = moveSingleShardLocally(
-                    shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
-                    collectionName, false, analysisData, databaseName
-                  );
-                  if (result.success) {
-                    analysisData = result.data;
-                    amountOfFollowersToMove--;
+              // calculate a regular collection
+              if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
+                // we might need to move leaders
+                if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
+                  amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+                }
+              }
+              if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
+                // we need to move followers
+                amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
+              }
+
+              if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
+                // no change, quick exit: return same state
+                return;
+              }
+            }
+
+
+            // now iterate through current state and start moving (local only!)
+            for (let [databaseName, database] of Object.entries(analysisData)) {
+              if (database[collectionName]) { // if collection got found inside that database // TODO: @michael verify pls if correct
+                for (let [shardId, shard] of Object.entries(database[collectionName])) {
+                  if (shard.distribution[0] === stats.bestDatabaseServer) {
+                    // we found the best db server as leader for the current shard
+                    if (amountOfLeadersToMove > 0 || moveBucket) {
+                      let result = moveSingleShardLocally(
+                        shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                        collectionName, true, analysisData, databaseName
+                      );
+                      if (result.success) {
+                        analysisData = result.data;
+                        amountOfLeadersToMove--;
+                      }
+                    }
+                  } else {
+                    // we might have a follower shard
+                    if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
+                      // we found dbserver as follower
+                      if (amountOfFollowersToMove > 0 || moveBucket) {
+                        let result = moveSingleShardLocally(
+                          shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                          collectionName, false, analysisData, databaseName
+                        );
+                        if (result.success) {
+                          analysisData = result.data;
+                          amountOfFollowersToMove--;
+                        }
+                      }
+                    }
+                  }
+
+                  if (!moveBucket && amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
+                    break;
                   }
                 }
               }
             }
-
-            if (!moveBucket && amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
-              break;
-            }
-          }
+          });
         }
-      });
-    });
+      );
 
-    return analysisData;
-  };
+      return analysisData;
+    }
+  ;
 // end helper functions
 
   /*
@@ -775,6 +779,7 @@ exports.run = function (extra, args) {
    *    The result will be stored in the global variable: 'analysisData'
    */
   let analysisData = generateAnalysis(initAgencyCollections);
+  // print(analysisData);
 
   /*
    *  Section Score:
@@ -801,10 +806,10 @@ exports.run = function (extra, args) {
    *    }
    */
   extendShardBucketList();
-  // print(shardBucketList);
+// print(shardBucketList);
 
-  // print("=== Scores ===");
-  // print(scores);
+// print("=== Scores ===");
+// print(scores);
 
   /*
    *  Section Find Collection Candidates:
@@ -814,8 +819,8 @@ exports.run = function (extra, args) {
    *    Populate collectionCandidates<collectionNames> array.
    */
   let candidates = getCandidatesToOptimize(scores[0]);
-  // print("=== Potential candidates ===");
-  // print(candidates);
+// print("=== Potential candidates ===");
+// print(candidates);
 
   /*
    *  Section Optimized Iterations:
@@ -833,11 +838,11 @@ exports.run = function (extra, args) {
   optimizedIterations.push(moveShardsLocally(candidates, analysisData));
   scores.push(calculateCollectionsScore(analysisData));
 
-  // the looping begins: top functions could join here as well, just wanted to keep
-  // sections to better debug and comment things. can be changed later.
+// the looping begins: top functions could join here as well, just wanted to keep
+// sections to better debug and comment things. can be changed later.
 
-  // TODO: Implement an exit rule:
-  // TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
+// TODO: Implement an exit rule:
+// TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
   for (var i = 0; i < MAX_ITERATIONS; i++) {
     print("Current iteration: " + i + " (+1)");
     candidates = getCandidatesToOptimize(scores[scores.length - 1]);
@@ -845,8 +850,8 @@ exports.run = function (extra, args) {
     scores.push(calculateCollectionsScore(optimizedIterations[i]));
   }
 
-  // print("===== Final Score ===== ");
-  // print(scores[scores.length - 1]);
+// print("===== Final Score ===== ");
+// print(scores[scores.length - 1]);
 
   print("===== Summary ===== ");
   print("Actions done: " + jobHistory.length);
@@ -859,7 +864,7 @@ exports.run = function (extra, args) {
    *  Rewrites:
    *    Optimizes and changes jobHistory
    */
-  // TODO: This needs to be implemented.
+// TODO: This needs to be implemented.
 
   /*
    *  Section Create Plan:
@@ -868,7 +873,7 @@ exports.run = function (extra, args) {
    *  Builds:
    *    Write moveShards plan to file.
    */
-  // Save to file
+// Save to file
   if (jobHistory.length > 0) {
     fs.write("moveShardsPlan.json", JSON.stringify(jobHistory));
   } else {
@@ -890,10 +895,11 @@ exports.run = function (extra, args) {
       }
     });
   });
-  // print(scores);
-  // print(shardBucketList);
-  // print(Object.keys(initAgencyCollections));
-  // print(jobHistory);
-  // print(agencyDatabases);
-  // print(analysisData);
-};
+// print(scores);
+// print(shardBucketList);
+// print(Object.keys(initAgencyCollections));
+// print(jobHistory);
+// print(agencyDatabases);
+// print(analysisData);
+}
+;
