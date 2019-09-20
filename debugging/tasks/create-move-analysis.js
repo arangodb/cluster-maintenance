@@ -20,6 +20,10 @@ number of shards, you would need to run the task twice.
 
 Currently there is a limit of 50k move shard jobs set (due to
 JavaScript String limitations).
+
+Execute the analyze shard script (will also create a move plan "moveShardsPlan.json"):
+ - arangosh --javascript.execute ../debug-scripts/debugging/index.js  create-move-analysis --server.endpoint tcp://(ip-address):(agency-port)> (agency)
+ - arangosh --javascript.execute ../debug-scripts/debugging/index.js  create-move-analysis --server.endpoint agencyDump.json (dump)
 `;
 
 exports.run = function (extra, args) {
@@ -862,6 +866,15 @@ exports.run = function (extra, args) {
   print("Iterations Done: " + MAX_ITERATIONS + " (+1)");
 
   /*
+   *  Section Optimize Plan:
+   *    Remove possible duplicates out of the plan, if they occur!
+   *
+   *  Rewrites:
+   *    Optimizes and changes jobHistory
+   */
+  // TODO: This needs to be implemented.
+
+  /*
    *  Section Create Plan:
    *    Actually create the plan, if we have found a good result distribution.
    *
@@ -877,9 +890,6 @@ exports.run = function (extra, args) {
 
   /*
    *  DEBUG PRINTS (can be removed later)
-   *  DEBUG PRINTS
-   *  DEBUG PRINTS
-   *  DEBUG PRINTS
    */
   print("=== Debug ===");
   print("Available DBServers: " + info.amountOfDatabaseServers);
@@ -893,7 +903,6 @@ exports.run = function (extra, args) {
       }
     });
   });
-
   // print(scores);
   // print(shardBucketList);
   // print(Object.keys(initAgencyCollections));
