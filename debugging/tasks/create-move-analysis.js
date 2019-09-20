@@ -758,7 +758,7 @@ exports.run = function (extra, args) {
       return analysisData;
     }
   ;
-// end helper functions
+  // end helper functions
 
   /*
    *  Section Initial:
@@ -806,10 +806,10 @@ exports.run = function (extra, args) {
    *    }
    */
   extendShardBucketList();
-// print(shardBucketList);
+  // print(shardBucketList);
 
-// print("=== Scores ===");
-// print(scores);
+  // print("=== Scores ===");
+  // print(scores);
 
   /*
    *  Section Find Collection Candidates:
@@ -819,8 +819,8 @@ exports.run = function (extra, args) {
    *    Populate collectionCandidates<collectionNames> array.
    */
   let candidates = getCandidatesToOptimize(scores[0]);
-// print("=== Potential candidates ===");
-// print(candidates);
+  // print("=== Potential candidates ===");
+  // print(candidates);
 
   /*
    *  Section Optimized Iterations:
@@ -838,11 +838,11 @@ exports.run = function (extra, args) {
   optimizedIterations.push(moveShardsLocally(candidates, analysisData));
   scores.push(calculateCollectionsScore(analysisData));
 
-// the looping begins: top functions could join here as well, just wanted to keep
-// sections to better debug and comment things. can be changed later.
+  // the looping begins: top functions could join here as well, just wanted to keep
+  // sections to better debug and comment things. can be changed later.
 
-// TODO: Implement an exit rule:
-// TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
+  // TODO: Implement an exit rule:
+  // TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
   for (var i = 0; i < MAX_ITERATIONS; i++) {
     print("Current iteration: " + i + " (+1)");
     candidates = getCandidatesToOptimize(scores[scores.length - 1]);
@@ -850,8 +850,8 @@ exports.run = function (extra, args) {
     scores.push(calculateCollectionsScore(optimizedIterations[i]));
   }
 
-// print("===== Final Score ===== ");
-// print(scores[scores.length - 1]);
+  // print("===== Final Score ===== ");
+  // print(scores[scores.length - 1]);
 
   print("===== Summary ===== ");
   print("Actions done: " + jobHistory.length);
@@ -864,7 +864,7 @@ exports.run = function (extra, args) {
    *  Rewrites:
    *    Optimizes and changes jobHistory
    */
-// TODO: This needs to be implemented.
+  // TODO: This needs to be implemented.
 
   /*
    *  Section Create Plan:
@@ -873,7 +873,7 @@ exports.run = function (extra, args) {
    *  Builds:
    *    Write moveShards plan to file.
    */
-// Save to file
+  // Save to file
   if (jobHistory.length > 0) {
     fs.write("moveShardsPlan.json", JSON.stringify(jobHistory));
   } else {
@@ -895,11 +895,10 @@ exports.run = function (extra, args) {
       }
     });
   });
-// print(scores);
-// print(shardBucketList);
-// print(Object.keys(initAgencyCollections));
-// print(jobHistory);
-// print(agencyDatabases);
-// print(analysisData);
-}
-;
+  // print(scores);
+  // print(shardBucketList);
+  // print(Object.keys(initAgencyCollections));
+  // print(jobHistory);
+  // print(agencyDatabases);
+  // print(analysisData);
+};
