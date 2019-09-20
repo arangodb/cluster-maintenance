@@ -384,13 +384,12 @@ exports.run = function (extra, args) {
       _.each(database[collectionName], function (shard) {
         if (shard.distribution[0] === dbServerName) {
           leaders++;
-          totalShards++;
         } else {
           if (shard.distribution.indexOf(dbServerName) > 0) {
             followers++;
-            totalShards++;
           }
         }
+        totalShards++;
       });
     });
 
@@ -844,6 +843,8 @@ exports.run = function (extra, args) {
   // the looping begins: top functions could join here as well, just wanted to keep
   // sections to better debug and comment things. can be changed later.
 
+  // TODO: Implement an exit rule:
+  // TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
   for (var i = 0; i < MAX_ITERATIONS; i++) {
     print("Current iteration: " + i + " (+1)");
     candidates = getCandidatesToOptimize(scores[scores.length - 1]);
