@@ -351,7 +351,7 @@ exports.run = function (extra, args) {
     let shardTotalAmount = leaders + followers;
 
     let singleShardCollection = false;
-    if (shardTotalAmount === 1) {
+    if (totalShards === 1) {
       // we have a single shard collection, mark it as one.
       singleShardCollection = true;
     }
