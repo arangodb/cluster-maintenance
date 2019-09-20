@@ -632,7 +632,8 @@ exports.run = function (extra, args) {
     return shards.leaders.length + shards.followers.length;
   };
 
-  /*
+  /* INFO:
+  TODO: Replaced by above function. Maybe optimize complete shard calculation later. OR remove this.
   let getTotalAmountOfShards = function (databaseServer, analysisData) {
     let totalShards = 0;
 
@@ -664,6 +665,10 @@ exports.run = function (extra, args) {
 
   // this function will move shards locally around and then return a new state
   let moveShardsLocally = function (candidates, analysisData) {
+
+    // TODO: Currently it is random if a "bucket" or a "single shard" is moved
+    // TODO: We should first move buckets around, then single shards!
+
     // first detect the amount of what (leader/follower) to move
     _.each(candidates, function (database, databaseName) {
       _.each(database, function (stats, collectionName) {
@@ -688,7 +693,7 @@ exports.run = function (extra, args) {
           if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
             let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
             if (shardDifference > shardBucketList[collectionName].shardBucketTotalAmount) {
-              // TODO: Check if we could calculate more precise
+              // TODO: Move bucket calculation - Check if we could calculate more precise
               moveBucket = true;
             } else {
               // no change - we are not moving the bucket, quick exit: return same state
