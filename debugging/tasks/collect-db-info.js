@@ -25,7 +25,10 @@ const anonymize = function (doc) {
     // make unique values because of unique indexes
     return Array(doc.length + 1).join('X') + uniqueValue++;
   }
-  if (doc === null || typeof doc === 'number' || typeof doc === 'boolean') {
+  if (typeof doc === 'number') {
+    return uniqueValue++;
+  }
+  if (doc === null || typeof doc === 'boolean') {
     return doc;
   }
   if (typeof doc === 'object') {
