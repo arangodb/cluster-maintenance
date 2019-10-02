@@ -64,7 +64,7 @@ const httpWrapper = (method, url, payload, headers) => {
     return arango[method](url, payload, headers);
   }
 };
-// connections - end///////////////////////////////////////////////////////////
+// connections - end //////////////////////////////////////////////////////////
 
 
 // roles //////////////////////////////////////////////////////////////////////
@@ -292,6 +292,7 @@ exports.httpWrapper = httpWrapper;
 
 // roles
 exports.checkCoordinator = checkCoordinator;
+exports.getRole = getRole;
 exports.checkLeader = checkLeader;
 
 // file reading
