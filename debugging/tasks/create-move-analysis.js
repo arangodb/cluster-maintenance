@@ -238,7 +238,7 @@ exports.run = function (extra, args) {
     return names;
   };
 
-  let isSystemCollection = function (collectionName) {
+  let isInternalGraphsCollection = function (collectionName) {
     if (collectionName.charAt(0) === '_') {
       if (collectionName.substring(0, 3) === '_to_') {
         return false;
@@ -246,8 +246,6 @@ exports.run = function (extra, args) {
         return false;
       } else if (collectionName.substring(0, 7) === '_local_') {
         return false;
-      } else {
-        return true;
       }
     }
     return false;
@@ -277,6 +275,11 @@ exports.run = function (extra, args) {
   };
 
   let addLeaderCollection = function (collection, databaseName) {
+    if (isInternalGraphsCollection(collection.name)) {
+      // skipping internal graphs collections
+      return;
+    }
+
     let sharding = buildShardDistribution(collection, databaseName);
     if (Object.keys(sharding).length > 0) {
       return sharding;
@@ -289,6 +292,11 @@ exports.run = function (extra, args) {
   // a "follower collection" has distributeShardsLike, will be maintained in buckets
   let addFollowerCollection = function (collection, databaseName) {
     let distributeShardsLike = collectionNamesMap[collection.distributeShardsLike];
+
+    if (isInternalGraphsCollection(collection.name)) {
+      // skipping internal graphs collections
+      return;
+    }
 
     if (!distributeShardsLike) {
       // invalid state
@@ -399,6 +407,9 @@ exports.run = function (extra, args) {
       // we have too much shards, we might need to remove some shards
       let shardsWeHaveTooMuch = shardsWeHave - shardDistributeInfo.perfectAmountOfShards;
       score = 1 - ((shardDistributeInfo.perfectAmountOfShards / shardsWeHaveTooMuch) / 10);
+      if (score < 0) {
+        score = score * (-1);
+      }
     } else if (shardsWeHave < shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // we have less then perfect shards, we might need fill that one up
       score = 1.0 / (shardDistributeInfo.perfectAmountOfShards - shardsWeHave);
@@ -422,8 +433,9 @@ exports.run = function (extra, args) {
           let distribution = info[1];
 
           // prepare empty objects
-          score[dbServerName] = {};
-          score[dbServerName][databaseName] = {};
+          if (!score[dbServerName][databaseName]) {
+            score[dbServerName][databaseName] = {};
+          }
 
           score[dbServerName][databaseName][collectionName] = {
             score: localScore,
@@ -440,6 +452,12 @@ exports.run = function (extra, args) {
 
     _.each(agencyCollections, function (collections, databaseName) {
       _.each(collections, function (collection) {
+
+        if (isInternalGraphsCollection(collection.name)) {
+          print("SKIPPED: " + collection.name); // TODO: RE-ENABLE SYSTEM COLLECTIONS
+          return;
+        }
+
         if (collection.distributeShardsLike) {
           // found followers, add them to the bucket
           addFollowerCollection(collection, databaseName);
@@ -893,5 +911,9 @@ exports.run = function (extra, args) {
   // print(Object.keys(initAgencyCollections));
   // print(jobHistory);
   // print(agencyDatabases);
+  // print(analysisData);
+  print(scores[0]);
+  print(scores[scores.length - 1]);
+
   // print(analysisData);
 };
