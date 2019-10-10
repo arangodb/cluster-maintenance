@@ -28,26 +28,6 @@ exports.run = function(extra, args) {
   const parsedFile = helper.getValue("agency-dump", args);
   let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
 
-  let extractPrimaries = function (info, dump) {
-    let primariesAll = {};
-    let primaries = {};
-
-    const health = dump.arango.Supervision.Health;
-
-    _.each(health, function (server, key) {
-      if (key.substring(0, 4) === 'PRMR') {
-        primariesAll[key] = server;
-
-        if (server.Status === 'GOOD') {
-          primaries[key] = server;
-        }
-      }
-    });
-
-    info.primaries = primaries;
-    info.primariesAll = primariesAll;
-  };
-
   let printPrimaries = function (info) {
     var table = new AsciiTable('Primaries');
     table.setHeading('', 'status');
@@ -57,29 +37,6 @@ exports.run = function(extra, args) {
     });
 
     print(table.toString());
-  };
-
-  let setGlobalShard = function (info, shard) {
-    let dbServer = shard.dbServer;
-    let isLeader = shard.isLeader;
-
-    if (!info.shardsPrimary[dbServer]) {
-      info.shardsPrimary[dbServer] = {
-        leaders: [],
-        followers: [],
-        realLeaders: []
-      };
-    }
-
-    if (isLeader) {
-      info.shardsPrimary[dbServer].leaders.push(shard);
-
-      if (shard.isReadLeader) {
-        info.shardsPrimary[dbServer].realLeaders.push(shard);
-      }
-    } else {
-      info.shardsPrimary[dbServer].followers.push(shard);
-    }
   };
 
   const recursiveMapPrinter = (map) => {
@@ -105,110 +62,6 @@ exports.run = function(extra, args) {
       return res;
     }
     return map;
-  };
-
-  let extractDatabases = function (info, dump) {
-    let databases = {};
-
-    _.each(dump.arango.Plan.Databases, function (database, name) {
-      databases[name] = _.extend({
-        collections: [],
-        shards: [],
-        leaders: [],
-        followers: [],
-        realLeaders: [],
-        isSystem: (name.charAt(0) === '_'),
-        data: database
-      }, database);
-    });
-
-    info.databases = databases;
-    info.collections = {};
-    info.shardsPrimary = {};
-    info.zombies = [];
-    info.broken = [];
-
-    let allCollections = dump.arango.Plan.Collections;
-
-    _.each(allCollections, function (collections, dbName) {
-      let database = databases[dbName];
-
-      _.each(collections, function (collection, cId) {
-        if (collection.name === undefined && collection.id === undefined) {
-          info.zombies.push({
-            database: dbName,
-            cid: cId,
-            data: collection
-          });
-        } else if (collection.name === undefined || collection.id === undefined) {
-          info.broken.push({
-            database: dbName,
-            cid: cId,
-            collection: collection,
-            data: collection
-          });
-        } else {
-          let full = dbName + "/" + collection.name;
-          let coll = {
-            name: collection.name,
-            fullName: full,
-            distributeShardsLike: collection.distributeShardsLike || '',
-            numberOfShards: collection.numberOfShards,
-            replicationFactor: collection.replicationFactor,
-            isSmart: collection.isSmart,
-            type: collection.type,
-            id: cId
-          };
-
-          database.collections.push(coll);
-          info.collections[full] = coll;
-
-          coll.shards = [];
-          coll.leaders = [];
-          coll.followers = [];
-
-          _.each(collection.shards, function (shard, sName) {
-            coll.shards.push(shard);
-
-            let s = {
-              shard: sName,
-              database: dbName,
-              collection: collection.name
-            };
-
-            if (0 < shard.length) {
-              coll.leaders.push(shard[0]);
-              setGlobalShard(info,
-                _.extend({
-                  dbServer: shard[0],
-                  isLeader: true,
-                  isReadLeader: (coll.distributeShardsLike === '')
-                }, s));
-
-              for (let i = 1; i < shard.length; ++i) {
-                coll.followers.push(shard[i]);
-                setGlobalShard(info,
-                  _.extend({
-                    dbServer: shard[i],
-                    isLeader: false
-                  }, s));
-              }
-            }
-          });
-
-          if (coll.distributeShardsLike !== '') {
-            coll.realLeaders = [];
-          } else {
-            coll.realLeaders = coll.leaders;
-          }
-
-          database.shards = database.shards.concat(coll.shards);
-          database.leaders = database.leaders.concat(coll.leaders);
-          database.followers = database.followers.concat(coll.followers);
-          database.realLeaders = database.realLeaders.concat(coll.realLeaders);
-        }
-      });
-    });
   };
 
   const extractCollectionIntegrity = (info, dump) => {
@@ -813,8 +666,8 @@ exports.run = function(extra, args) {
   const info = {};
 
   // extract info
-  extractPrimaries(info, dump);
-  extractDatabases(info, dump);
+  helper.extractPrimaries(info, dump);
+  helper.extractDatabases(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractDistributionGroups(info, dump);
