@@ -38,15 +38,24 @@ exports.run = function (extra, args) {
   const MAX_ITERATIONS = 2;
 
   // Analysis Data Format
-  // { // TODO HEIKO update that one here
-  //   leaderCollectionA: {
-  //     followerCollectionX: {
-  //       s12: {nodes: [leader, follower1, follower2, ... ]}
-  //       s13: {nodes: [leader, follower1, follower2, ... ]}
-  //     }
-  //   },
-  //   leaderCollectionB: {},
-  //    ...
+  // {
+  //   databaseName: {
+  //     collectionName: {
+  //       shardName: {
+  //         distribution: [
+  //           'databaseServerLeader-ID',
+  //           'databaseServerFollowerA-ID',
+  //           'databaseServerFollowerB-ID',
+  //           'databaseServerFollowerC-ID',
+  //            ...
+  //         ]
+  //       },
+  //       ..
+  //     },
+  //     leaderCollectionB: {},
+  //      ...
+  //   }
+  //  ...
   // }
 
   // here we will store our current cluster state
@@ -911,9 +920,9 @@ exports.run = function (extra, args) {
   // print(Object.keys(initAgencyCollections));
   // print(jobHistory);
   // print(agencyDatabases);
-  // print(analysisData);
-  print(scores[0]);
-  print(scores[scores.length - 1]);
+  print(analysisData);
+  // print(scores[0]);
+  // print(scores[scores.length - 1]);
 
   // print(analysisData);
 };
