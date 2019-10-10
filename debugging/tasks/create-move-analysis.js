@@ -374,10 +374,32 @@ exports.run = function (extra, args) {
      * }
      */
 
+    let singleShardCollectionCandidates = {};
     let candidates = {};
+
     _.each(score, function (database, databaseServerName) {
       _.each(database, function (collections, databaseName) {
         _.each(collections, function (collection, collectionName) {
+          if (collection.distribution.singleShardCollection) {
+            // if we found a single shard collection, keep and count the amount of single shard collections per server
+            if (!singleShardCollectionCandidates[databaseServerName]) {
+              singleShardCollectionCandidates[databaseServerName] = {
+                leaders: [],
+                followers: []
+              };
+            }
+            print("Info start");
+            print(collection)
+            print("Info end");
+            if (collection.distribution.shardLeaderAmount === 1) {
+              singleShardCollectionCandidates[databaseServerName].leaders.push(collectionName);
+            } else if (collection.distribution.shardFollowerAmount === 1) {
+              singleShardCollectionCandidates[databaseServerName].followers.push(collectionName);
+            }
+            // we will not optimize it here related due to the score, as it makes no sense here
+            return;
+          }
+
           if (collection.score <= MIN_ALLOWED_SCORE) {
             if (!candidates[databaseName]) {
               candidates[databaseName] = {};
@@ -425,6 +447,8 @@ exports.run = function (extra, args) {
       });
     });
 
+    print("single shards");
+    print(singleShardCollectionCandidates)
     return candidates;
   };
 
@@ -746,5 +770,5 @@ exports.run = function (extra, args) {
   // print(agencyDatabases);
   // print(analysisData);
   // print(scores[0]);
-  print(scores[scores.length - 1]);
+  // print(scores[scores.length - 1]);
 };
