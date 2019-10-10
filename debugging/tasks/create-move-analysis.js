@@ -277,11 +277,6 @@ exports.run = function (extra, args) {
   };
 
   let addLeaderCollection = function (collection, databaseName) {
-    if (isSystemCollection(collection.name)) {
-      // skipping system collections
-      return;
-    }
-
     let sharding = buildShardDistribution(collection, databaseName);
     if (Object.keys(sharding).length > 0) {
       return sharding;
@@ -294,10 +289,6 @@ exports.run = function (extra, args) {
   // a "follower collection" has distributeShardsLike, will be maintained in buckets
   let addFollowerCollection = function (collection, databaseName) {
     let distributeShardsLike = collectionNamesMap[collection.distributeShardsLike];
-    if (isSystemCollection(distributeShardsLike)) {
-      // skipping system collections
-      return;
-    }
 
     if (!distributeShardsLike) {
       // invalid state
@@ -449,12 +440,6 @@ exports.run = function (extra, args) {
 
     _.each(agencyCollections, function (collections, databaseName) {
       _.each(collections, function (collection) {
-
-        if (isSystemCollection(collection.name)) {
-          print("SKIPPED: " + collection.name); // TODO: RE-ENABLE SYSTEM COLLECTIONS
-          return;
-        }
-
         if (collection.distributeShardsLike) {
           // found followers, add them to the bucket
           addFollowerCollection(collection, databaseName);
@@ -582,7 +567,7 @@ exports.run = function (extra, args) {
       // remove old leader, add new one
       if (analysisData[databaseName][collectionName][shardId].distribution.indexOf(toDBServer) > 0) {
         // we are already follower, move not allowed
-        print("THIS IS NOT ALLOWED TO HAPPEN")
+        // print("THIS IS NOT ALLOWED TO HAPPEN")
       } else {
         analysisData[databaseName][collectionName][shardId].distribution.shift();
         analysisData[databaseName][collectionName][shardId].distribution.unshift(toDBServer);
