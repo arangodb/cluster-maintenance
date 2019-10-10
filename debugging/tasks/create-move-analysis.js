@@ -463,7 +463,7 @@ exports.run = function (extra, args) {
       _.each(collections, function (collection) {
 
         if (isInternalGraphsCollection(collection.name)) {
-          print("SKIPPED: " + collection.name); // TODO: RE-ENABLE SYSTEM COLLECTIONS
+          print("SKIPPED: " + collection.name);
           return;
         }
 
