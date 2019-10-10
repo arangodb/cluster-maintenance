@@ -497,37 +497,6 @@ exports.run = function (extra, args) {
     return shards.leaders.length + shards.followers.length;
   };
 
-  /* INFO:
-  TODO: Replaced by above function. Maybe optimize complete shard calculation later. OR remove this.
-  let getTotalAmountOfShards = function (databaseServer, analysisData) {
-    let totalShards = 0;
-
-    _.each(analysisData, function(shards, collectionName) {
-      if (isBucketMaster(collectionName)) {
-        // special calculation
-        // check if distributeShardsLike collection is holder of collection
-        let found = false;
-        _.each(shards, function (shard) {
-          if (shard.distribution.includes(databaseServer)) {
-            // TODO: Check if that one here is correct, not 100% sure.
-            found = true;
-          }
-        });
-        if (found) {
-          totalShards = totalShards + (shardBucketList[collectionName].shardBucketTotalAmount / shardBucketList[collectionName].replicationFactor);
-        }
-      } else {
-        _.each(shards, function (shard) {
-          if (shard.distribution.includes(databaseServer)) {
-            totalShards = totalShards++;
-          }
-        });
-      }
-    });
-
-    return totalShards;
-  };*/
-
   // this function will move shards locally around and then return a new state
   let moveShardsLocally = function (candidates, analysisData) {
 
