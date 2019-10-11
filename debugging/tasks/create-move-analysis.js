@@ -35,7 +35,7 @@ exports.run = function (extra, args) {
 
   // statics
   const MIN_ALLOWED_SCORE = 0.9;
-  const MAX_ITERATIONS = 2;
+  const MAX_ITERATIONS = 10;
 
   // Analysis Data Format
   // {
@@ -797,13 +797,19 @@ exports.run = function (extra, args) {
   // the looping begins: top functions could join here as well, just wanted to keep
   // sections to better debug and comment things. can be changed later.
 
-  // TODO: Implement an exit rule:
-  // TODO: e.g best scores reached, e.g. no new actions (jobHistory) added etc.
+  let oldJobHistoryLenght = jobHistory.length;
   for (var i = 0; i < MAX_ITERATIONS; i++) {
     print("Current iteration: " + i + " (+1)");
     candidates = getCandidatesToOptimize(scores[scores.length - 1]);
     optimizedIterations.push(moveShardsLocally(candidates, optimizedIterations[i]));
     scores.push(calculateCollectionsScore(optimizedIterations[i]));
+
+    if (oldJobHistoryLenght == jobHistory.length) {
+      // we did not find any new possible optimizations.
+      print("Exit due no possible optimizations.")
+      break;
+    }
+    oldJobHistoryLenght = jobHistory.length;
   }
 
   // print("===== Final Score ===== ");
