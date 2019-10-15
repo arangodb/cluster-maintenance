@@ -1,6 +1,7 @@
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango, db */
 const fs = require('fs');
+const _ = require('lodash');
 
 // messages ///////////////////////////////////////////////////////////////////
 const printGood = (msg) => {
