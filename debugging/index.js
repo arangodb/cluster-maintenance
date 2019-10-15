@@ -1,4 +1,4 @@
-#!/usr/bin/env -S arangosh --javascript.execute
+#!/usr/bin/arangosh --javascript.execute
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango, db */
 
