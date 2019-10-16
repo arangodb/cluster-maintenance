@@ -493,39 +493,45 @@ exports.run = function (extra, args) {
     };
 
     _.each(singleShardCollectionDistribution, function (dbServer, databaseServerName) {
-      if (result.distribution.weakestAmountOfLeaders === null || dbServer.leaders.length < result.distribution.weakestAmountOfLeaders) {
-        result.distribution.weakestAmountOfLeaders = dbServer.leaders.length;
-        result.distribution.weakestLeaderDatabaseServer = databaseServerName;
-      }
-      if (result.distribution.weakestAmountOfFollowers === null || dbServer.followers.length < result.distribution.weakestAmountOfFollowers) {
-        result.distribution.weakestAmountOfFollowers = dbServer.followers.length;
-        result.distribution.weakestFollowerDatabaseServer = databaseServerName;
-      }
-      if (result.distribution.bestAmountOfLeaders === null || dbServer.leaders.length > result.distribution.bestAmountOfLeaders) {
-        result.distribution.bestAmountOfLeaders = dbServer.leaders.length;
-        result.distribution.bestLeaderDatabaseServer = databaseServerName;
-      }
-      if (result.distribution.bestAmountOfFollowers === null || dbServer.followers.length < result.distribution.bestAmountOfFollowers) {
-        result.distribution.bestAmountOfFollowers = dbServer.followers.length;
-        result.distribution.bestFollowerDatabaseServer = databaseServerName;
-      }
+      let calculateAmountOfCollectionShards = function (collection, database) {
+        let amount = 1;
+        if (isBucketMaster(collection, database)) {
+          amount = shardBucketList[database][collection].followers.length * shardBucketList[database][collection].replicationFactor;
+        }
+        return amount;
+      };
+
+      let calculateAmountOfDatabaseShards = function (collections) {
+        let amount = 0;
+        _.each(collections, function (collection) {
+          amount += calculateAmountOfCollectionShards(collection.collection, collection.database)
+        });
+        return amount;
+      };
 
       _.each(dbServer.leaders, function (cEntity) {
-        if (isBucketMaster(cEntity.collection, cEntity.database)) {
-          let amount = shardBucketList[cEntity.database][cEntity.collection].followers.length * shardBucketList[cEntity.database][cEntity.collection].replicationFactor;
-          result.distribution.totalAmountOfLeaders += amount;
-        } else {
-          result.distribution.totalAmountOfLeaders++;
-        }
+        result.distribution.totalAmountOfLeaders += calculateAmountOfCollectionShards(cEntity.collection, cEntity.database);
       });
       _.each(dbServer.followers, function (cEntity) {
-        if (isBucketMaster(cEntity.collection, cEntity.database)) {
-          let amount = shardBucketList[cEntity.database][cEntity.collection].followers.length * shardBucketList[cEntity.database][cEntity.collection].replicationFactor;
-          result.distribution.totalAmountOfFollowers += amount;
-        } else {
-          result.distribution.totalAmountOfFollowers++;
-        }
+        result.distribution.totalAmountOfFollowers += calculateAmountOfCollectionShards(cEntity.collection, cEntity.database);
       });
+
+      if (result.distribution.weakestAmountOfLeaders === null || calculateAmountOfDatabaseShards(dbServer.leaders) < result.distribution.weakestAmountOfLeaders) {
+        result.distribution.weakestAmountOfLeaders = calculateAmountOfDatabaseShards(dbServer.leaders);
+        result.distribution.weakestLeaderDatabaseServer = databaseServerName;
+      }
+      if (result.distribution.weakestAmountOfFollowers === null || calculateAmountOfDatabaseShards(dbServer.followers) < result.distribution.weakestAmountOfFollowers) {
+        result.distribution.weakestAmountOfFollowers = calculateAmountOfDatabaseShards(dbServer.followers);
+        result.distribution.weakestFollowerDatabaseServer = databaseServerName;
+      }
+      if (result.distribution.bestAmountOfLeaders === null || calculateAmountOfDatabaseShards(dbServer.leaders) > result.distribution.bestAmountOfLeaders) {
+        result.distribution.bestAmountOfLeaders = calculateAmountOfDatabaseShards(dbServer.leaders);
+        result.distribution.bestLeaderDatabaseServer = databaseServerName;
+      }
+      if (result.distribution.bestAmountOfFollowers === null || calculateAmountOfDatabaseShards(dbServer.followers) < result.distribution.bestAmountOfFollowers) {
+        result.distribution.bestAmountOfFollowers = calculateAmountOfDatabaseShards(dbServer.followers);
+        result.distribution.bestFollowerDatabaseServer = databaseServerName;
+      }
     });
 
     result.distribution.perfectAmountOfLeaders = Math.round(result.distribution.totalAmountOfLeaders / info.amountOfDatabaseServers);
@@ -718,6 +724,7 @@ exports.run = function (extra, args) {
     print("distri")
     print(singleShardDistribution)
     // leaders
+
     if (singleShardDistribution.bestAmountOfLeaders > singleShardDistribution.perfectAmountOfLeaders) {
       let amountOfCollectionsToMove = singleShardDistribution.bestAmountOfLeaders - singleShardDistribution.perfectAmountOfLeaders;
       let collectionsToBeMoved = singleShardInfo[singleShardDistribution.bestLeaderDatabaseServer].leaders.slice(0, amountOfCollectionsToMove);
@@ -1062,7 +1069,6 @@ exports.run = function (extra, args) {
   print("===== Summary ===== ");
   print("");
   print("Potential actions found in total: " + jobHistory.length);
-  print("Written to file: \"moveShardsPlan.json\"");
 
   /*
    *  Section Optimize Plan:
@@ -1083,6 +1089,7 @@ exports.run = function (extra, args) {
   // Save to file
   if (jobHistory.length > 0) {
     fs.write("moveShardsPlan.json", JSON.stringify(jobHistory));
+    print("Written to file: \"moveShardsPlan.json\"");
   } else {
     print("No actions could be created. Exiting.")
   }
