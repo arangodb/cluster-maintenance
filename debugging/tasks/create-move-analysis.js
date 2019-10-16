@@ -988,7 +988,7 @@ exports.run = function (extra, args) {
    *    The result of each iteration will be stored in optimizedIterations array
    */
   print("");
-  print("=== Optimizations ===");
+  print("===== Optimizations =====");
   print("");
   let optimizedIterations = []; // TODO: We should consider removing this for better performance
   optimizedIterations.push(moveShardsLocally(candidates[candidates.length - 1], analysisData));
@@ -1005,17 +1005,20 @@ exports.run = function (extra, args) {
 
     if (oldJobHistoryLenght == jobHistory.length) {
       // we did not find any new possible optimizations.
-      print("Finished. No more optimizations could be added.")
+      print("Done. No more optimizations could be added.")
       break;
     }
     oldJobHistoryLenght = jobHistory.length;
   }
 
-  printScoreComparison(scores)
+  print("");
+  print("===== Results ===== ");
+  printScoreComparison(scores);
 
   print("===== Summary ===== ");
   print("");
-  print("Actions done in total: " + jobHistory.length);
+  print("Potential actions found in total: " + jobHistory.length);
+  print("Written to file: \"moveShardsPlan.json\"");
 
   /*
    *  Section Optimize Plan:
