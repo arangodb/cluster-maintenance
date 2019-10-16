@@ -727,7 +727,9 @@ exports.run = function (extra, args) {
 
     if (singleShardDistribution.bestAmountOfLeaders > singleShardDistribution.perfectAmountOfLeaders) {
       let amountOfCollectionsToMove = singleShardDistribution.bestAmountOfLeaders - singleShardDistribution.perfectAmountOfLeaders;
+      print("TODO - IMPORTANT - collectionsToBeMoved calculated in a wrong way. fix");
       let collectionsToBeMoved = singleShardInfo[singleShardDistribution.bestLeaderDatabaseServer].leaders.slice(0, amountOfCollectionsToMove);
+      print(collectionsToBeMoved)
 
       _.each(collectionsToBeMoved, function (cEntity) {
         let shardId = Object.keys(analysisData[cEntity.database][cEntity.collection])[0];
