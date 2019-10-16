@@ -38,6 +38,7 @@ exports.run = function (extra, args) {
   // statics
   const MIN_ALLOWED_SCORE = 0.9;
   const MAX_ITERATIONS = 10;
+  const debug = false;
 
   // Analysis Data Format
   // {
@@ -172,17 +173,14 @@ exports.run = function (extra, args) {
     }
 
     if (collection.numberOfShards === 0) {
-      // TODO: check for more edge cases
-      // e.g. shadow collection
-      print("Debug - Skipped collection: " + collection.name);
-      if (collection.shadowCollections && collection.shadowCollections.length > 0) {
-        print("Debug - Reason: Shadow collection");
-        //_.each(collection.shadowCollections, function (shadowCollectionID){
-        //  print(collectionNamesMap[shadowCollectionID]);
-        // });
-      } else {
-        print("Debug - Reason: Unknown.")
-        print(collection);
+      if (debug) {
+        print("Debug - Skipped collection: " + collection.name);
+        if (collection.shadowCollections && collection.shadowCollections.length > 0) {
+          print("Debug - Reason: Shadow collection");
+        } else {
+          print("Debug - Reason: Unknown.")
+          print(collection);
+        }
       }
       return;
     }
@@ -869,7 +867,7 @@ exports.run = function (extra, args) {
 
         if (databaseServer.end !== 0) {
           if (databaseServer.end > bestDistribution) {
-            scoreEnd = scoreFormatter(bestDistribution / databaseServer.end);;
+            scoreEnd = scoreFormatter(bestDistribution / databaseServer.end);
           } else {
             scoreEnd = scoreFormatter(databaseServer.end / bestDistribution);
           }
@@ -987,26 +985,29 @@ exports.run = function (extra, args) {
   /*
    *  DEBUG PRINTS (can be removed later)
    */
-  print("");
-  print("=== Debug ===");
-  print("");
-  print("Available DBServers: " + info.amountOfDatabaseServers);
-  _.each(initAgencyCollections, function (collections) {
-    _.each(collections, function (collection, cId) {
-      //print(collection.name);
-      if (collection.name === "TrendingThreats") {
-        //  print("===========");
-        // print(collection);
-        //    print("Sharding after: " + collectionNamesMap[collection.distributeShardsLike]);
-      }
+  if (debug) {
+    print("");
+    print("=== Debug ===");
+    print("");
+    print("Available DBServers: " + info.amountOfDatabaseServers);
+    _.each(initAgencyCollections, function (collections) {
+      _.each(collections, function (collection, cId) {
+        //print(collection.name);
+        if (collection.name === "TrendingThreats") {
+          //  print("===========");
+          // print(collection);
+          //    print("Sharding after: " + collectionNamesMap[collection.distributeShardsLike]);
+        }
+      });
     });
-  });
-  // print(scores);
-  // print(shardBucketList);
-  // print(Object.keys(initAgencyCollections));
-  // print(jobHistory);
-  // print(agencyDatabases);
-  // print(analysisData);
-  // print(scores[scores.length - 1])
+    // print(scores);
+    // print(shardBucketList);
+    // print(Object.keys(initAgencyCollections));
+    // print(jobHistory);
+    // print(agencyDatabases);
+    // print(analysisData);
+    // print(scores[scores.length - 1])
+  }
+
   print("");
 };
