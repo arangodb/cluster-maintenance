@@ -38,7 +38,7 @@ exports.run = function (extra, args) {
   // statics
   const MIN_ALLOWED_SCORE = 0.75;
   const MAX_ITERATIONS = 10;
-  const debug = false;
+  const debug = true;
 
   // Analysis Data Format
   // {
@@ -153,7 +153,9 @@ exports.run = function (extra, args) {
     if (Object.keys(sharding).length > 0) {
       return sharding;
     } else {
-      print("Debug: Empty sharding for collection " + collection.name)
+      if (debug) {
+        print("Debug: Empty sharding for collection " + collection.name)
+      }
       return;
     }
   };
@@ -174,13 +176,13 @@ exports.run = function (extra, args) {
 
     if (collection.numberOfShards === 0) {
       if (debug) {
-        print("Debug - Skipped collection: " + collection.name);
+        let msg = "Debug - Skipped collection: " + collection.name;
         if (collection.shadowCollections && collection.shadowCollections.length > 0) {
-          print("Debug - Reason: Shadow collection");
+          msg += " - Reason: Shadow collection";
         } else {
-          print("Debug - Reason: Unknown.")
-          print(collection);
+          msg += "- Reason: Unknown.";
         }
+        print(msg);
       }
       return;
     }
@@ -320,7 +322,9 @@ exports.run = function (extra, args) {
       _.each(collections, function (collection) {
 
         if (isInternalGraphsCollection(collection.name)) {
-          print("SKIPPED: " + collection.name);
+          if (debug) {
+            print("SKIPPED: " + collection.name);
+          }
           return;
         }
 
@@ -449,8 +453,6 @@ exports.run = function (extra, args) {
             }
 
             candidates[databaseName][collectionName].scores.push(collection.score);
-          } else {
-            print(collection);
           }
         });
       });
