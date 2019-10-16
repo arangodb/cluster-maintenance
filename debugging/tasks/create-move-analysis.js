@@ -248,15 +248,15 @@ exports.run = function (extra, args) {
     let followers = 0;
     let totalShards = 0;
 
-      _.each(analysisData[databaseNameToCheck][collectionName], function (shard) {
-        if (shard.distribution[0] === dbServerName) {
-          leaders++;
-        } else {
-          if (shard.distribution.indexOf(dbServerName) > 0) {
-            followers++;
-          }
+    _.each(analysisData[databaseNameToCheck][collectionName], function (shard) {
+      if (shard.distribution[0] === dbServerName) {
+        leaders++;
+      } else {
+        if (shard.distribution.indexOf(dbServerName) > 0) {
+          followers++;
         }
-        totalShards++;
+      }
+      totalShards++;
     });
 
     let shardDistributeInfo = calculateShardDistributionInformation(
@@ -510,8 +510,22 @@ exports.run = function (extra, args) {
         result.distribution.bestFollowerDatabaseServer = databaseServerName;
       }
 
-      result.distribution.totalAmountOfLeaders += dbServer.leaders.length;
-      result.distribution.totalAmountOfFollowers += dbServer.followers.length;
+      _.each(dbServer.leaders, function (cEntity) {
+        if (isBucketMaster(cEntity.collection, cEntity.database)) {
+          let amount = shardBucketList[cEntity.database][cEntity.collection].followers.length * shardBucketList[cEntity.database][cEntity.collection].replicationFactor;
+          result.distribution.totalAmountOfLeaders += amount;
+        } else {
+          result.distribution.totalAmountOfLeaders++;
+        }
+      });
+      _.each(dbServer.followers, function (cEntity) {
+        if (isBucketMaster(cEntity.collection, cEntity.database)) {
+          let amount = shardBucketList[cEntity.database][cEntity.collection].followers.length * shardBucketList[cEntity.database][cEntity.collection].replicationFactor;
+          result.distribution.totalAmountOfFollowers += amount;
+        } else {
+          result.distribution.totalAmountOfFollowers++;
+        }
+      });
     });
 
     result.distribution.perfectAmountOfLeaders = Math.round(result.distribution.totalAmountOfLeaders / info.amountOfDatabaseServers);
@@ -699,6 +713,10 @@ exports.run = function (extra, args) {
     let singleShardInfo = candidates[1].info;
     let singleShardDistribution = candidates[1].distribution;
 
+    print("info");
+    print(singleShardInfo)
+    print("distri")
+    print(singleShardDistribution)
     // leaders
     if (singleShardDistribution.bestAmountOfLeaders > singleShardDistribution.perfectAmountOfLeaders) {
       let amountOfCollectionsToMove = singleShardDistribution.bestAmountOfLeaders - singleShardDistribution.perfectAmountOfLeaders;
@@ -714,6 +732,10 @@ exports.run = function (extra, args) {
           analysisData = result.data;
         }
       });
+    } else {
+      if (debug) {
+        print("Will not move collection: ");
+      }
     }
 
     // followers
@@ -859,13 +881,25 @@ exports.run = function (extra, args) {
                 end: 0
               };
               if (collection.distribution.shardTotalAmount === 1) {
-                amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
-                totalSingleShardCollections++;
+                if (isBucketMaster(collectionName, databaseName)) {
+                  let amount = shardBucketList[databaseName][collectionName].followers.length * shardBucketList[databaseName][collectionName].replicationFactor;
+                  amountOfSingleShardCollectionsPerDB[databaseServerName].start += amount;
+                  totalSingleShardCollections += amount;
+                } else {
+                  amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
+                  totalSingleShardCollections++;
+                }
               }
             } else {
               if (collection.distribution.shardTotalAmount === 1) {
-                amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
-                totalSingleShardCollections++;
+                if (isBucketMaster(collectionName, databaseName)) {
+                  let amount = shardBucketList[databaseName][collectionName].followers.length * shardBucketList[databaseName][collectionName].replicationFactor;
+                  amountOfSingleShardCollectionsPerDB[databaseServerName].start += amount;
+                  totalSingleShardCollections += amount;
+                } else {
+                  amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
+                  totalSingleShardCollections++;
+                }
               }
             }
           } else {
@@ -894,7 +928,12 @@ exports.run = function (extra, args) {
         _.each(collections, function (collection, collectionName) {
           if (collection.distribution.singleShardCollection) {
             if (collection.distribution.shardTotalAmount === 1) {
-              amountOfSingleShardCollectionsPerDB[databaseServerName].end++;
+              if (isBucketMaster(collectionName, databaseName)) {
+                let amount = shardBucketList[databaseName][collectionName].followers.length * shardBucketList[databaseName][collectionName].replicationFactor;
+                amountOfSingleShardCollectionsPerDB[databaseServerName].end += amount;
+              } else {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].end++;
+              }
             }
           }
         });
