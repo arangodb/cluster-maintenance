@@ -36,7 +36,7 @@ exports.run = function (extra, args) {
   const health = dump.arango.Supervision.Health;
 
   // statics
-  const MIN_ALLOWED_SCORE = 0.9;
+  const MIN_ALLOWED_SCORE = 0.75;
   const MAX_ITERATIONS = 10;
   const debug = false;
 
@@ -449,6 +449,8 @@ exports.run = function (extra, args) {
             }
 
             candidates[databaseName][collectionName].scores.push(collection.score);
+          } else {
+            print(collection);
           }
         });
       });
@@ -766,9 +768,9 @@ exports.run = function (extra, args) {
     let SHELL_COLOR_YELLOW = "\x1b[33m";
 
     let selectedColor = SHELL_COLOR_YELLOW;
-    if (value > 0.7) {
+    if (value > 0.75) {
       selectedColor = SHELL_COLOR_GREEN;
-    } else if (value < 0.3) {
+    } else if (value < 0.25) {
       selectedColor = SHELL_COLOR_RED;
     }
 
