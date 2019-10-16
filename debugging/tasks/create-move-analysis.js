@@ -37,8 +37,8 @@ exports.run = function (extra, args) {
 
   // statics
   const MIN_ALLOWED_SCORE = 0.75;
-  const MAX_ITERATIONS = 10;
-  const debug = true;
+  const MAX_ITERATIONS = 20;
+  const debug = false;
 
   // Analysis Data Format
   // {
@@ -186,6 +186,7 @@ exports.run = function (extra, args) {
       }
       return;
     }
+
     if (!shardBucketList[databaseName]) {
       shardBucketList[databaseName] = {};
     }
@@ -363,8 +364,8 @@ exports.run = function (extra, args) {
     });
   };
 
-  let isBucketMaster = function (collectionName) {
-    if (shardBucketList[collectionName]) {
+  let isBucketMaster = function (collectionName, databaseName) {
+    if (shardBucketList[databaseName][collectionName]) {
       return true;
     } else {
       return false;
@@ -415,7 +416,7 @@ exports.run = function (extra, args) {
 
             if (!candidates[databaseName][collectionName]) {
               // are we a bucket master?
-              let bucketMaster = isBucketMaster(collectionName);
+              let bucketMaster = isBucketMaster(collectionName, databaseName);
 
               candidates[databaseName][collectionName] = {
                 bestScore: null,
@@ -607,13 +608,16 @@ exports.run = function (extra, args) {
           let amountOfTotalShardsOfWeakestServer = getTotalAmountOfShards(
             stats.weakestDatabaseServer, analysisData, true
           );
-          // print("WE FOUND A BUCKET MASTER !! - Name: " + collectionName);
-          // print("Total amount of best: " + amountOfTotalShardsOfBestServer);
-          // print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
+
+          if (debug) {
+            print("Found a bucket master: " + collectionName);
+            // print("Total amount of best: " + amountOfTotalShardsOfBestServer);
+            // print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
+          }
 
           if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
             let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
-            if (shardDifference > shardBucketList[collectionName].shardBucketTotalAmount) {
+            if (shardDifference > shardBucketList[databaseName][collectionName].shardBucketTotalAmount) {
               // TODO: Move bucket calculation - Check if we could calculate more precise
               amountOfLeadersToMove = 1;
               amountOfFollowersToMove = 1;
@@ -780,12 +784,41 @@ exports.run = function (extra, args) {
   };
 
   let printScoreComparison = function (scores) {
+    let countScoreChange = function (object, start, end) {
+      if (end > start) {
+        object.optimized++;
+      } else if (start > end) {
+        object.degraded++;
+      } else if (start === end) {
+        object.equal++;
+      }
+    };
+
+    let printScoreChange = function (object) {
+      var scoreTable = new AsciiTable('Score changes: ');
+      let scoreHeadings = [
+        'Optimized',
+        'Degraded',
+        'Unchanged'
+      ];
+      scoreTable.setHeading(scoreHeadings);
+      scoreTable.addRow([
+        object.optimized, object.degraded, object.equal
+      ]);
+      print(scoreTable.toString());
+    };
+
     let start = scores[0];
     let end = scores[scores.length - 1];
     let amountOfSingleShardCollectionsPerDB = {};
     let foundAtLeastOneShardedCollection = false;
+    let collectionStatistics = {
+      optimized: 0,
+      degraded: 0,
+      equal: 0
+    };
 
-    // multiple shard description
+      // multiple shard description
     var shardedCollectionsTable = new AsciiTable('Scores - Sharded collections');
     let tableHeadings = [
       'Server',
@@ -805,6 +838,11 @@ exports.run = function (extra, args) {
     ];
     singleShardCollectionsTable.setHeading(singleShardTableHeadings);
     let totalSingleShardCollections = 0;
+    let singleShardCollectionStatistics = {
+      optimized: 0,
+      degraded: 0,
+      equal: 0
+    };
 
     _.each(start, function (database, databaseServerName) {
       _.each(database, function (collections, databaseName) {
@@ -831,8 +869,16 @@ exports.run = function (extra, args) {
               databaseServerName,
               databaseName,
               collectionName,
-              scoreFormatter(collection.score) + " -> " + scoreFormatter(end[databaseServerName][databaseName][collectionName].score)
+              scoreFormatter(
+                collection.score) + " -> " + scoreFormatter(end[databaseServerName][databaseName][collectionName].score
+              )
             ]);
+
+            countScoreChange(
+              collectionStatistics,
+              collection.score,
+              end[databaseServerName][databaseName][collectionName].score
+            );
           }
         });
       });
@@ -853,39 +899,47 @@ exports.run = function (extra, args) {
     if (foundAtLeastOneShardedCollection) {
       print("");
       print(shardedCollectionsTable.toString());
+      printScoreChange(collectionStatistics);
       print("");
     }
     if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
       let bestDistribution = Math.round(totalSingleShardCollections / info.dbServerNames.length);
       _.each(amountOfSingleShardCollectionsPerDB, function (databaseServer, databaseServerName) {
-        let scoreEnd = scoreFormatter(0);
-        let scoreStart = scoreFormatter(0);
+        let scoreEnd = 0;
+        let scoreStart = 0;
 
         if (databaseServer.start !== 0) {
           if (databaseServer.start < bestDistribution) {
-            scoreStart = scoreFormatter(databaseServer.start / bestDistribution);
+            scoreStart = databaseServer.start / bestDistribution;
           } else {
-            scoreStart = scoreFormatter(bestDistribution / databaseServer.start);
+            scoreStart = bestDistribution / databaseServer.start;
           }
         }
 
         if (databaseServer.end !== 0) {
           if (databaseServer.end > bestDistribution) {
-            scoreEnd = scoreFormatter(bestDistribution / databaseServer.end);
+            scoreEnd = bestDistribution / databaseServer.end;
           } else {
-            scoreEnd = scoreFormatter(databaseServer.end / bestDistribution);
+            scoreEnd = databaseServer.end / bestDistribution;
           }
         }
 
+
+        countScoreChange(
+          singleShardCollectionStatistics,
+          scoreStart,
+          scoreEnd
+        );
         singleShardCollectionsTable.addRow([
           databaseServerName,
           databaseServer.start,
           databaseServer.end,
-          scoreStart + " -> " + scoreEnd
+          scoreFormatter(scoreStart) + " -> " + scoreFormatter(scoreEnd)
         ]);
       });
       print("");
       print(singleShardCollectionsTable.toString());
+      printScoreChange(singleShardCollectionStatistics);
       print("");
     }
   };
