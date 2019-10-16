@@ -237,7 +237,7 @@ exports.run = function (extra, args) {
     }
   };
 
-  let calulateCollectionScore = function (analysisData, collectionName, dbServerName) {
+  let calulateCollectionScore = function (analysisData, collectionName, dbServerName, databaseNameToCheck) {
     // tries to calculate the distribution based on collection shards
     // TODO: Next step will also be to verify the distribution regarding leader <-> follower
     // No server should have leaders/followers only.
@@ -248,8 +248,7 @@ exports.run = function (extra, args) {
     let followers = 0;
     let totalShards = 0;
 
-    _.each(analysisData, function (database, databaseName) {
-      _.each(database[collectionName], function (shard) {
+      _.each(analysisData[databaseNameToCheck][collectionName], function (shard) {
         if (shard.distribution[0] === dbServerName) {
           leaders++;
         } else {
@@ -258,7 +257,6 @@ exports.run = function (extra, args) {
           }
         }
         totalShards++;
-      });
     });
 
     let shardDistributeInfo = calculateShardDistributionInformation(
@@ -297,7 +295,7 @@ exports.run = function (extra, args) {
 
       _.each(analysisData, function (database, databaseName) {
         _.each(database, function (collection, collectionName) { // analysisData original
-          let info = calulateCollectionScore(analysisData, collectionName, dbServerName);
+          let info = calulateCollectionScore(analysisData, collectionName, dbServerName, databaseName);
           let localScore = info[0];
           let distribution = info[1];
 
@@ -366,6 +364,9 @@ exports.run = function (extra, args) {
 
   let isBucketMaster = function (collectionName, databaseName) {
     if (shardBucketList[databaseName][collectionName]) {
+      if (debug) {
+        print("Collection: " + collectionName + " is a bucket master")
+      }
       return true;
     } else {
       return false;
@@ -406,6 +407,10 @@ exports.run = function (extra, args) {
               });
             }
             // we will not optimize it here related due to the score, as it makes no sense here
+            if (debug) {
+              // TODO: Check skipped ones in detail
+              // print("Exiting : " + collectionName)
+            }
             return;
           }
 
@@ -818,7 +823,7 @@ exports.run = function (extra, args) {
       equal: 0
     };
 
-      // multiple shard description
+    // multiple shard description
     var shardedCollectionsTable = new AsciiTable('Scores - Sharded collections');
     let tableHeadings = [
       'Server',
