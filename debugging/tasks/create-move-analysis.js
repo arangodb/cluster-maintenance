@@ -757,6 +757,22 @@ exports.run = function (extra, args) {
   let scores = [];
   scores.push(calculateCollectionsScore(analysisData));
 
+  let scoreFormatter = function (value) {
+    let SHELL_COLOR_RESET = "\x1b[0m";
+    let SHELL_COLOR_GREEN = "\x1b[32m";
+    let SHELL_COLOR_RED = "\x1b[31m";
+    let SHELL_COLOR_YELLOW = "\x1b[33m";
+
+    let selectedColor = SHELL_COLOR_YELLOW;
+    if (value > 0.7) {
+      selectedColor = SHELL_COLOR_GREEN;
+    } else if (value < 0.3) {
+      selectedColor = SHELL_COLOR_RED;
+    }
+
+    return selectedColor + Number.parseFloat(value).toFixed(2) + SHELL_COLOR_RESET;
+  };
+
   let printScoreComparison = function (scores) {
     let start = scores[0];
     let end = scores[scores.length - 1];
@@ -769,8 +785,7 @@ exports.run = function (extra, args) {
       'Server',
       'Database',
       'Collection',
-      'Score (old)',
-      'Score (new)'
+      'Score'
     ];
     shardedCollectionsTable.setHeading(tableHeadings);
 
@@ -780,8 +795,7 @@ exports.run = function (extra, args) {
       'Database Server',
       'Amount (old)',
       'Amount (new)',
-      'Score (old)',
-      'Score (new)'
+      'Score'
     ];
     singleShardCollectionsTable.setHeading(singleShardTableHeadings);
     let totalSingleShardCollections = 0;
@@ -811,8 +825,7 @@ exports.run = function (extra, args) {
               databaseServerName,
               databaseName,
               collectionName,
-              collection.score,
-              end[databaseServerName][databaseName][collectionName].score
+              scoreFormatter(collection.score) + " -> " + scoreFormatter(end[databaseServerName][databaseName][collectionName].score)
             ]);
           }
         });
@@ -839,22 +852,22 @@ exports.run = function (extra, args) {
     if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
       let bestDistribution = Math.round(totalSingleShardCollections / info.dbServerNames.length);
       _.each(amountOfSingleShardCollectionsPerDB, function (databaseServer, databaseServerName) {
-        let scoreEnd = Number.parseFloat(0).toFixed(2);
-        let scoreStart = Number.parseFloat(0).toFixed(2);
+        let scoreEnd = scoreFormatter(0);
+        let scoreStart = scoreFormatter(0);
 
         if (databaseServer.start !== 0) {
           if (databaseServer.start < bestDistribution) {
-            scoreStart = Number.parseFloat(databaseServer.start / bestDistribution).toFixed(2);
+            scoreStart = scoreFormatter(databaseServer.start / bestDistribution);
           } else {
-            scoreStart = Number.parseFloat(bestDistribution / databaseServer.start).toFixed(2);
+            scoreStart = scoreFormatter(bestDistribution / databaseServer.start);
           }
         }
 
         if (databaseServer.end !== 0) {
           if (databaseServer.end > bestDistribution) {
-            scoreEnd = Number.parseFloat(bestDistribution / databaseServer.end).toFixed(2);
+            scoreEnd = scoreFormatter(bestDistribution / databaseServer.end);;
           } else {
-            scoreEnd = Number.parseFloat(databaseServer.end / bestDistribution).toFixed(2);
+            scoreEnd = scoreFormatter(databaseServer.end / bestDistribution);
           }
         }
 
@@ -862,8 +875,7 @@ exports.run = function (extra, args) {
           databaseServerName,
           databaseServer.start,
           databaseServer.end,
-          scoreStart,
-          scoreEnd
+          scoreStart + " -> " + scoreEnd
         ]);
       });
       print("");
