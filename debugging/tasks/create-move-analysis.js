@@ -18,6 +18,8 @@ Execute the analyze shard script (will also create a move plan "moveShardsPlan.j
  - arangosh --javascript.execute ../debug-scripts/debugging/index.js  create-move-analysis --server.endpoint agencyDump.json (dump)
 `;
 
+const AsciiTable = require('../3rdParty/ascii-table');
+
 exports.run = function (extra, args) {
 
   // imports
@@ -90,6 +92,7 @@ exports.run = function (extra, args) {
     });
     return count;
   };
+
   let getNamesOfCurrentDatabaseServers = function () {
     let names = [];
     _.each(health, function (info, serverName) {
@@ -418,6 +421,7 @@ exports.run = function (extra, args) {
                 bestAmountOfFollowers: null,
                 bestDatabaseServer: null,
                 perfectAmountOfShards: null,
+                scores: [],
                 weakestScore: null,
                 weakestAmountOfLeaders: null,
                 weakestAmountOfFollowers: null,
@@ -445,12 +449,20 @@ exports.run = function (extra, args) {
               candidates[databaseName][collectionName].perfectAmountOfLeaders = collection.distribution.perfectAmountOfLeaders;
               candidates[databaseName][collectionName].perfectAmountOfFollowers = collection.distribution.perfectAmountOfFollowers;
             }
+
+            candidates[databaseName][collectionName].scores.push(collection.score);
           }
         });
       });
     });
 
-    return [candidates, checkSingleShardCollectionCandidates(singleShardCollectionDistribution)];
+    return [sortCandidates(candidates), checkSingleShardCollectionCandidates(singleShardCollectionDistribution)];
+  };
+
+  let sortCandidates = function (candidates) {
+    // TODO: needs to be implemented (bucket first)
+    // print(candidates);
+    return candidates;
   };
 
   let checkSingleShardCollectionCandidates = function (singleShardCollectionDistribution) {
@@ -509,7 +521,7 @@ exports.run = function (extra, args) {
     let success = false;
 
     if (fromDBServer == toDBServer) {
-      print("Best and worst server are equal. No actions needs to be done.")
+      // print("Best and worst server are equal. No actions needs to be done.")
       // makes no sense to do this
       return {
         success: success,
@@ -692,7 +704,6 @@ exports.run = function (extra, args) {
         }
       });
     }
-    print(singleShardInfo);
 
     // followers
     if (singleShardDistribution.bestAmountOfFollowers > singleShardDistribution.perfectAmountOfFollowers) {
@@ -735,7 +746,6 @@ exports.run = function (extra, args) {
    *    The result will be stored in the global variable: 'analysisData'
    */
   let analysisData = generateAnalysis(initAgencyCollections);
-  // print(analysisData);
 
   /*
    *  Section Score:
@@ -746,6 +756,121 @@ exports.run = function (extra, args) {
    */
   let scores = [];
   scores.push(calculateCollectionsScore(analysisData));
+
+  let printScoreComparison = function (scores) {
+    let start = scores[0];
+    let end = scores[scores.length - 1];
+    let amountOfSingleShardCollectionsPerDB = {};
+    let foundAtLeastOneShardedCollection = false;
+
+    // multiple shard description
+    var shardedCollectionsTable = new AsciiTable('Scores - Sharded collections');
+    let tableHeadings = [
+      'Server',
+      'Database',
+      'Collection',
+      'Score (old)',
+      'Score (new)'
+    ];
+    shardedCollectionsTable.setHeading(tableHeadings);
+
+    // single shard description
+    var singleShardCollectionsTable = new AsciiTable('Scores - Single sharded collections');
+    let singleShardTableHeadings = [
+      'Database Server',
+      'Amount (old)',
+      'Amount (new)',
+      'Score (old)',
+      'Score (new)'
+    ];
+    singleShardCollectionsTable.setHeading(singleShardTableHeadings);
+    let totalSingleShardCollections = 0;
+
+    _.each(start, function (database, databaseServerName) {
+      _.each(database, function (collections, databaseName) {
+        _.each(collections, function (collection, collectionName) {
+          if (collection.distribution.singleShardCollection) {
+            if (!amountOfSingleShardCollectionsPerDB[databaseServerName]) {
+              amountOfSingleShardCollectionsPerDB[databaseServerName] = {
+                start: 0,
+                end: 0
+              };
+              if (collection.distribution.shardTotalAmount === 1) {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
+                totalSingleShardCollections++;
+              }
+            } else {
+              if (collection.distribution.shardTotalAmount === 1) {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].start++;
+                totalSingleShardCollections++;
+              }
+            }
+          } else {
+            foundAtLeastOneShardedCollection = true;
+            shardedCollectionsTable.addRow([
+              databaseServerName,
+              databaseName,
+              collectionName,
+              collection.score,
+              end[databaseServerName][databaseName][collectionName].score
+            ]);
+          }
+        });
+      });
+    });
+
+    _.each(end, function (database, databaseServerName) {
+      _.each(database, function (collections, databaseName) {
+        _.each(collections, function (collection, collectionName) {
+          if (collection.distribution.singleShardCollection) {
+            if (collection.distribution.shardTotalAmount === 1) {
+              amountOfSingleShardCollectionsPerDB[databaseServerName].end++;
+            }
+          }
+        });
+      });
+    });
+
+    if (foundAtLeastOneShardedCollection) {
+      print("");
+      print(shardedCollectionsTable.toString());
+      print("");
+    }
+    if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
+      let bestDistribution = Math.round(totalSingleShardCollections / info.dbServerNames.length);
+      _.each(amountOfSingleShardCollectionsPerDB, function (databaseServer, databaseServerName) {
+        let scoreEnd = Number.parseFloat(0).toFixed(2);
+        let scoreStart = Number.parseFloat(0).toFixed(2);
+
+        if (databaseServer.start !== 0) {
+          if (databaseServer.start < bestDistribution) {
+            scoreStart = Number.parseFloat(databaseServer.start / bestDistribution).toFixed(2);
+          } else {
+            scoreStart = Number.parseFloat(bestDistribution / databaseServer.start).toFixed(2);
+          }
+        }
+
+        if (databaseServer.end !== 0) {
+          if (databaseServer.end > bestDistribution) {
+            scoreEnd = Number.parseFloat(bestDistribution / databaseServer.end).toFixed(2);
+          } else {
+            scoreEnd = Number.parseFloat(databaseServer.end / bestDistribution).toFixed(2);
+          }
+        }
+
+        singleShardCollectionsTable.addRow([
+          databaseServerName,
+          databaseServer.start,
+          databaseServer.end,
+          scoreStart,
+          scoreEnd
+        ]);
+      });
+      print("");
+      print(singleShardCollectionsTable.toString());
+      print("");
+    }
+  };
 
   /*
    *  Section Extend Distribution Analysis:
@@ -774,7 +899,8 @@ exports.run = function (extra, args) {
    *  Builds:
    *    Populate collectionCandidates<collectionNames> array.
    */
-  let candidates = getCandidatesToOptimize(scores[0]);
+  let candidates = [];
+  candidates.push(getCandidatesToOptimize(scores[0]));
   // print("=== Potential candidates ===");
   // print(candidates);
 
@@ -789,9 +915,11 @@ exports.run = function (extra, args) {
    *  Builds:
    *    The result of each iteration will be stored in optimizedIterations array
    */
+  print("");
   print("=== Optimizations ===");
+  print("");
   let optimizedIterations = []; // TODO: We should consider removing this for better performance
-  optimizedIterations.push(moveShardsLocally(candidates, analysisData));
+  optimizedIterations.push(moveShardsLocally(candidates[candidates.length - 1], analysisData));
   scores.push(calculateCollectionsScore(analysisData));
 
   // the looping begins: top functions could join here as well, just wanted to keep
@@ -799,25 +927,23 @@ exports.run = function (extra, args) {
 
   let oldJobHistoryLenght = jobHistory.length;
   for (var i = 0; i < MAX_ITERATIONS; i++) {
-    print("Current iteration: " + i + " (+1)");
-    candidates = getCandidatesToOptimize(scores[scores.length - 1]);
-    optimizedIterations.push(moveShardsLocally(candidates, optimizedIterations[i]));
+    candidates.push(getCandidatesToOptimize(scores[scores.length - 1]));
+    optimizedIterations.push(moveShardsLocally(candidates[candidates.length - 1], optimizedIterations[i]));
     scores.push(calculateCollectionsScore(optimizedIterations[i]));
 
     if (oldJobHistoryLenght == jobHistory.length) {
       // we did not find any new possible optimizations.
-      print("Exit due no possible optimizations.")
+      print("Finished. No more optimizations could be added.")
       break;
     }
     oldJobHistoryLenght = jobHistory.length;
   }
 
-  // print("===== Final Score ===== ");
-  // print(scores[scores.length - 1]);
+  printScoreComparison(scores)
 
   print("===== Summary ===== ");
+  print("");
   print("Actions done: " + jobHistory.length);
-  print("Iterations Done: " + MAX_ITERATIONS + " (+1)");
 
   /*
    *  Section Optimize Plan:
@@ -845,7 +971,9 @@ exports.run = function (extra, args) {
   /*
    *  DEBUG PRINTS (can be removed later)
    */
+  print("");
   print("=== Debug ===");
+  print("");
   print("Available DBServers: " + info.amountOfDatabaseServers);
   _.each(initAgencyCollections, function (collections) {
     _.each(collections, function (collection, cId) {
@@ -863,6 +991,5 @@ exports.run = function (extra, args) {
   // print(jobHistory);
   // print(agencyDatabases);
   // print(analysisData);
-  // print(scores[0]);
-  // print(scores[scores.length - 1]);
+  // print(scores[scores.length - 1])
 };
