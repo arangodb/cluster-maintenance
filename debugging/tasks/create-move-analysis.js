@@ -757,7 +757,11 @@ exports.run = function (extra, args) {
   let scores = [];
   scores.push(calculateCollectionsScore(analysisData));
 
-  let scoreFormatter = function (value) {
+  let scoreFormatter = function (value, disableColor) {
+    if (disableColor) {
+      return Number.parseFloat(value).toFixed(2);
+    }
+
     let SHELL_COLOR_RESET = "\x1b[0m";
     let SHELL_COLOR_GREEN = "\x1b[32m";
     let SHELL_COLOR_RED = "\x1b[31m";
@@ -955,7 +959,7 @@ exports.run = function (extra, args) {
 
   print("===== Summary ===== ");
   print("");
-  print("Actions done: " + jobHistory.length);
+  print("Actions done in total: " + jobHistory.length);
 
   /*
    *  Section Optimize Plan:
@@ -1004,4 +1008,5 @@ exports.run = function (extra, args) {
   // print(agencyDatabases);
   // print(analysisData);
   // print(scores[scores.length - 1])
+  print("");
 };
