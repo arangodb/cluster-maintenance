@@ -37,8 +37,8 @@ exports.run = function (extra, args) {
 
   // statics
   const MIN_ALLOWED_SCORE = 0.95;
-  const MAX_ITERATIONS = 10;
-  const debug = true;
+  const MAX_ITERATIONS = 5;
+  const debug = false;
 
   // Analysis Data Format
   // {
@@ -271,19 +271,10 @@ exports.run = function (extra, args) {
       // we are in that range of lowerBound <-> upperBound, almost perfect distribution
       score = 0.99;
     } else if (shardsWeHave > shardDistributeInfo.perfectAmountOfShards) {
-      // we have too much shards, we might need to remove some shards
-      let shardsWeHaveTooMuch = shardsWeHave - shardDistributeInfo.perfectAmountOfShards;
-      print("Too  much:" + shardsWeHaveTooMuch)
-      print("Perfect:" + shardDistributeInfo.perfectAmountOfShards)
-      score = 1 - ((shardDistributeInfo.perfectAmountOfShards / shardsWeHaveTooMuch) / 10);
-      // score = 1 - ((shardsWeHaveTooMuch / shardDistributeInfo.perfectAmountOfShards) / 10);
-      if (score < 0) {
-        score = score * (-1);
-      }
-      print("score:" + score)
+      score = shardsWeHave / shardDistributeInfo.perfectAmountOfShards;
     } else if (shardsWeHave < shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // we have less then perfect shards, we might need fill that one up
-      score = 1.0 / (shardDistributeInfo.perfectAmountOfShards - shardsWeHave);
+      score = shardsWeHave / shardDistributeInfo.perfectAmountOfShards;
     } else if (shardsWeHave == 0) {
       // we do not have any shards
       score = 0;
@@ -381,7 +372,7 @@ exports.run = function (extra, args) {
     /*
      * {
      *   worstDatabaseServer: abc,
-     *   bestDatabaseServer: xyz,
+     *   mostFilledDatabaseServer: xyz,
      * }
      */
 
@@ -418,52 +409,50 @@ exports.run = function (extra, args) {
             return;
           }
 
-          if (collection.score <= MIN_ALLOWED_SCORE) {
-            if (!candidates[databaseName]) {
-              candidates[databaseName] = {};
-            }
-
-            if (!candidates[databaseName][collectionName]) {
-              // are we a bucket master?
-              let bucketMaster = isBucketMaster(collectionName, databaseName);
-
-              candidates[databaseName][collectionName] = {
-                bestScore: null,
-                bestAmountOfLeaders: null,
-                bestAmountOfFollowers: null,
-                bestDatabaseServer: null,
-                perfectAmountOfShards: null,
-                scores: [],
-                weakestScore: null,
-                weakestAmountOfLeaders: null,
-                weakestAmountOfFollowers: null,
-                weakestDatabaseServer: null,
-                isBucketMaster: bucketMaster
-              };
-            }
-
-            if (candidates[databaseName][collectionName].weakestScore === null || collection.score < candidates[databaseName][collectionName].weakestScore) {
-              candidates[databaseName][collectionName].weakestScore = collection.score;
-              candidates[databaseName][collectionName].weakestDatabaseServer = databaseServerName;
-              candidates[databaseName][collectionName].weakestAmountOfLeaders = collection.distribution.shardLeaderAmount;
-              candidates[databaseName][collectionName].weakestAmountOfFollowers = collection.distribution.shardFollowerAmount;
-              candidates[databaseName][collectionName].perfectAmountOfShards = collection.distribution.perfectAmountOfShards;
-              candidates[databaseName][collectionName].perfectAmountOfLeaders = collection.distribution.perfectAmountOfLeaders;
-              candidates[databaseName][collectionName].perfectAmountOfFollowers = collection.distribution.perfectAmountOfFollowers;
-            }
-
-            if (candidates[databaseName][collectionName].bestScore === null || collection.score > candidates[databaseName][collectionName].bestScore) {
-              candidates[databaseName][collectionName].bestScore = collection.score;
-              candidates[databaseName][collectionName].bestDatabaseServer = databaseServerName;
-              candidates[databaseName][collectionName].bestAmountOfLeaders = collection.distribution.shardLeaderAmount;
-              candidates[databaseName][collectionName].bestAmountOfFollowers = collection.distribution.shardFollowerAmount;
-              candidates[databaseName][collectionName].perfectAmountOfShards = collection.distribution.perfectAmountOfShards;
-              candidates[databaseName][collectionName].perfectAmountOfLeaders = collection.distribution.perfectAmountOfLeaders;
-              candidates[databaseName][collectionName].perfectAmountOfFollowers = collection.distribution.perfectAmountOfFollowers;
-            }
-
-            candidates[databaseName][collectionName].scores.push(collection.score);
+          if (!candidates[databaseName]) {
+            candidates[databaseName] = {};
           }
+
+          if (!candidates[databaseName][collectionName]) {
+            // are we a bucket master?
+            let bucketMaster = isBucketMaster(collectionName, databaseName);
+
+            candidates[databaseName][collectionName] = {
+              bestScore: null,
+              bestAmountOfLeaders: null,
+              bestAmountOfFollowers: null,
+              mostFilledDatabaseServer: null,
+              perfectAmountOfShards: null,
+              scores: [],
+              weakestScore: null,
+              weakestAmountOfLeaders: null,
+              weakestAmountOfFollowers: null,
+              leastFilledDatabaseServer: null,
+              isBucketMaster: bucketMaster
+            };
+          }
+
+          if (candidates[databaseName][collectionName].weakestScore === null || collection.score < candidates[databaseName][collectionName].weakestScore) {
+            candidates[databaseName][collectionName].weakestScore = collection.score;
+            candidates[databaseName][collectionName].leastFilledDatabaseServer = databaseServerName;
+            candidates[databaseName][collectionName].weakestAmountOfLeaders = collection.distribution.shardLeaderAmount;
+            candidates[databaseName][collectionName].weakestAmountOfFollowers = collection.distribution.shardFollowerAmount;
+            candidates[databaseName][collectionName].perfectAmountOfShards = collection.distribution.perfectAmountOfShards;
+            candidates[databaseName][collectionName].perfectAmountOfLeaders = collection.distribution.perfectAmountOfLeaders;
+            candidates[databaseName][collectionName].perfectAmountOfFollowers = collection.distribution.perfectAmountOfFollowers;
+          }
+
+          if (candidates[databaseName][collectionName].bestScore === null || collection.score > candidates[databaseName][collectionName].bestScore) {
+            candidates[databaseName][collectionName].bestScore = collection.score;
+            candidates[databaseName][collectionName].mostFilledDatabaseServer = databaseServerName;
+            candidates[databaseName][collectionName].bestAmountOfLeaders = collection.distribution.shardLeaderAmount;
+            candidates[databaseName][collectionName].bestAmountOfFollowers = collection.distribution.shardFollowerAmount;
+            candidates[databaseName][collectionName].perfectAmountOfShards = collection.distribution.perfectAmountOfShards;
+            candidates[databaseName][collectionName].perfectAmountOfLeaders = collection.distribution.perfectAmountOfLeaders;
+            candidates[databaseName][collectionName].perfectAmountOfFollowers = collection.distribution.perfectAmountOfFollowers;
+          }
+
+          candidates[databaseName][collectionName].scores.push(collection.score);
         });
       });
     });
@@ -611,16 +600,33 @@ exports.run = function (extra, args) {
     }
   };
 
+  let initialAmountOfShardsPerDBServer = null;
+  let modificatedAmountOfShardsPerDBServer = {};
+
+  let helperTotalAmountOfShards = function () {
+    if (!initialAmountOfShardsPerDBServer) {
+      helper.extractDatabases(initialAmountOfShardsPerDBServer, dump);
+      helper.extractPrimaries(initialAmountOfShardsPerDBServer, dump);
+    }
+  };
+
   let getTotalAmountOfShards = function (databaseServer) {
-    let x = {};
-    helper.extractDatabases(x, dump);
-    helper.extractPrimaries(x, dump);
-    let shards = x.shardsPrimary[databaseServer];
-    return shards.leaders.length + shards.followers.length;
+    if (!initialAmountOfShardsPerDBServer) {
+      // calculate only once
+      helperTotalAmountOfShards();
+
+      _.each(info.dbServerNames, function (dbs) {
+        let shards = initialAmountOfShardsPerDBServer.shardsPrimary[dbs];
+        modificatedAmountOfShardsPerDBServer[dbserver] = shards.leaders.length + shards.followers.length;
+      });
+    }
+
+    return modificatedAmountOfShardsPerDBServer[databaseServer];
   };
 
   // this function will move shards locally around and then return a new state
   let moveShardsLocally = function (candidates, analysisData) {
+    print(" == START MOVE JOB ==")
     // candidates[0]: are the "regular collections"
     // candidates[1]: are collections with a single shard
 
@@ -636,31 +642,37 @@ exports.run = function (extra, args) {
         // special condition:
         // if we are a masterBucket collection, we need to take a look at the global
         // shard distribution per database before we start moving.
-        if (stats.isBucketMaster) {
-          let amountOfTotalShardsOfBestServer = getTotalAmountOfShards(
-            stats.bestDatabaseServer, analysisData, true
+        if (false) {
+          print("Bucket name: " + collectionName)
+          let amountOfTotalShardsOfMostFilledDatabaseServer = getTotalAmountOfShards(
+            stats.mostFilledDatabaseServer
           );
-          let amountOfTotalShardsOfWeakestServer = getTotalAmountOfShards(
-            stats.weakestDatabaseServer, analysisData, true
+          let amountOfTotalShardsOfLeastFilledDatabaseServer = getTotalAmountOfShards(
+            stats.leastFilledDatabaseServer
           );
 
-          if (debug) {
-            print("Found a bucket master: " + collectionName);
-            print("Total amount of best: " + amountOfTotalShardsOfBestServer);
-            print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
-          }
+          print("============================================================================")
+          print("Found a bucket master: " + collectionName);
+          print("Database: " + databaseName);
+          print("Total amount of best: " + amountOfTotalShardsOfMostFilledDatabaseServer);
+          print("Total amount of worst: " + amountOfTotalShardsOfLeastFilledDatabaseServer);
+          print("============================================================================")
 
-          if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
-            let shardDifference = amountOfTotalShardsOfBestServer - amountOfTotalShardsOfWeakestServer;
-            if (shardDifference > shardBucketList[databaseName][collectionName].shardBucketTotalAmount) {
+
+          if (amountOfTotalShardsOfMostFilledDatabaseServer > amountOfTotalShardsOfLeastFilledDatabaseServer) {
+            let shardDifference = amountOfTotalShardsOfMostFilledDatabaseServer - amountOfTotalShardsOfLeastFilledDatabaseServer;
+            if (shardDifference > shardBucketList[databaseName][collectionName].followers.length + 1) {
               // TODO: Move bucket calculation - Check if we could calculate more precise
               amountOfLeadersToMove = 1;
               amountOfFollowersToMove = 1;
+              print("We will move a bucket");
             } else {
               // no change - we are not moving the bucket, quick exit: return same state
+              print("We will not move a bucket 1");
               return;
             }
           } else {
+            print("We will not move a bucket 2");
             // no change - we are not moving the bucket, quick exit: return same state
             return;
           }
@@ -677,6 +689,10 @@ exports.run = function (extra, args) {
               } else {
                 amountOfLeadersToMove = diff;
               }
+
+              if (stats.bestAmountOfLeaders - amountOfLeadersToMove < stats.perfectAmountOfLeaders) {
+                amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+              }
             }
           }
           if (stats.bestAmountOfFollowers > stats.weakestAmountOfFollowers) {
@@ -687,10 +703,17 @@ exports.run = function (extra, args) {
                 // do not move too much (more then perfect) shards to the weakest db server
                 amountOfFollowersToMove = stats.perfectAmountOfFollowers - stats.weakestAmountOfFollowers;
               } else {
-                amountOfFollowersToMove= diff;
+                amountOfFollowersToMove = diff;
+              }
+
+              if (stats.bestAmountOfFollowers - amountOfFollowersToMove < stats.perfectAmountOfFollowers) {
+                amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
               }
             }
           }
+
+          print("Leaders to move: " + amountOfLeadersToMove);
+          print("Followers to move: " + amountOfFollowersToMove);
 
           if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
             // no change, quick exit: return same state
@@ -702,29 +725,33 @@ exports.run = function (extra, args) {
         for (let [databaseName, database] of Object.entries(analysisData)) {
           if (database[collectionName]) { // if collection got found inside that database // TODO: @michael verify pls if correct
             for (let [shardId, shard] of Object.entries(database[collectionName])) {
-              if (shard.distribution[0] === stats.bestDatabaseServer) {
+              if (shard.distribution[0] === stats.mostFilledDatabaseServer) {
                 // we found the best db server as leader for the current shard
                 if (amountOfLeadersToMove > 0) {
                   let result = moveSingleShardLocally(
-                    shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                    shardId, stats.mostFilledDatabaseServer, stats.leastFilledDatabaseServer,
                     collectionName, true, analysisData, databaseName
                   );
                   if (result.success) {
                     analysisData = result.data;
+                    modificatedAmountOfShardsPerDBServer[stats.leastFilledDatabaseServer]++;
+                    modificatedAmountOfShardsPerDBServer[stats.mostFilledDatabaseServer]--;
                     amountOfLeadersToMove--;
                   }
                 }
               } else {
                 // we might have a follower shard
-                if (shard.distribution.indexOf(stats.bestDatabaseServer) > 0) {
+                if (shard.distribution.indexOf(stats.mostFilledDatabaseServer) > 0) {
                   // we found dbserver as follower
                   if (amountOfFollowersToMove > 0) {
                     let result = moveSingleShardLocally(
-                      shardId, stats.bestDatabaseServer, stats.weakestDatabaseServer,
+                      shardId, stats.mostFilledDatabaseServer, stats.leastFilledDatabaseServer,
                       collectionName, false, analysisData, databaseName
                     );
                     if (result.success) {
                       analysisData = result.data;
+                      modificatedAmountOfShardsPerDBServer[stats.leastFilledDatabaseServer]++;
+                      modificatedAmountOfShardsPerDBServer[stats.mostFilledDatabaseServer]--;
                       amountOfFollowersToMove--;
                     }
                   }
@@ -853,11 +880,11 @@ exports.run = function (extra, args) {
 
   let printScoreComparison = function (scores) {
     let countScoreChange = function (object, start, end) {
-      if (end > start) {
+      if (Math.abs(end - 1) < Math.abs(start - 1)) {
         object.optimized++;
-      } else if (start > end) {
+      } else if (Math.abs(end - 1) > Math.abs(start - 1)) {
         object.degraded++;
-      } else if (start === end) {
+      } else {
         object.equal++;
       }
     };
@@ -1137,4 +1164,5 @@ exports.run = function (extra, args) {
   }
 
   print("");
+  // print(shardBucketList)
 };
