@@ -36,9 +36,9 @@ exports.run = function (extra, args) {
   const health = dump.arango.Supervision.Health;
 
   // statics
-  const MIN_ALLOWED_SCORE = 0.75;
+  const MIN_ALLOWED_SCORE = 0.95;
   const MAX_ITERATIONS = 10;
-  const debug = false;
+  const debug = true;
 
   // Analysis Data Format
   // {
@@ -239,7 +239,7 @@ exports.run = function (extra, args) {
 
   let calulateCollectionScore = function (analysisData, collectionName, dbServerName, databaseNameToCheck) {
     // tries to calculate the distribution based on collection shards
-    // TODO: Next step will also be to verify the distribution regarding leader <-> follower
+    // TODO Review: Next step will also be to verify the distribution regarding leader <-> follower
     // No server should have leaders/followers only.
     // skip collections which do have distributeShardsLike (calculation differs)
 
@@ -264,19 +264,23 @@ exports.run = function (extra, args) {
     );
 
     let shardsWeHave = shardDistributeInfo.shardTotalAmount;
-    if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
-      // we are in that range of lowerBound <-> upperBound, almost perfect distribution
-      score = 1;
-    } else if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
+    if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // perfect distribution
       score = 1;
+    } else if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
+      // we are in that range of lowerBound <-> upperBound, almost perfect distribution
+      score = 0.99;
     } else if (shardsWeHave > shardDistributeInfo.perfectAmountOfShards) {
       // we have too much shards, we might need to remove some shards
       let shardsWeHaveTooMuch = shardsWeHave - shardDistributeInfo.perfectAmountOfShards;
+      print("Too  much:" + shardsWeHaveTooMuch)
+      print("Perfect:" + shardDistributeInfo.perfectAmountOfShards)
       score = 1 - ((shardDistributeInfo.perfectAmountOfShards / shardsWeHaveTooMuch) / 10);
+      // score = 1 - ((shardsWeHaveTooMuch / shardDistributeInfo.perfectAmountOfShards) / 10);
       if (score < 0) {
         score = score * (-1);
       }
+      print("score:" + score)
     } else if (shardsWeHave < shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // we have less then perfect shards, we might need fill that one up
       score = 1.0 / (shardDistributeInfo.perfectAmountOfShards - shardsWeHave);
@@ -489,7 +493,7 @@ exports.run = function (extra, args) {
     // Single shard collections
     let amount = 0;
     _.each(collections, function (collection) {
-      amount += calculateAmountOfCollectionShards(collection.collection, collection.database)
+      amount += calculateAmountOfCollectionShards(collection.collection, collection.database, false)
     });
     return amount;
   };
@@ -642,8 +646,8 @@ exports.run = function (extra, args) {
 
           if (debug) {
             print("Found a bucket master: " + collectionName);
-            // print("Total amount of best: " + amountOfTotalShardsOfBestServer);
-            // print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
+            print("Total amount of best: " + amountOfTotalShardsOfBestServer);
+            print("Total amount of worst: " + amountOfTotalShardsOfWeakestServer);
           }
 
           if (amountOfTotalShardsOfBestServer > amountOfTotalShardsOfWeakestServer) {
@@ -662,15 +666,30 @@ exports.run = function (extra, args) {
           }
         } else {
           // calculate a regular collection
+          // TODO Review: Do not move more then perfect amount to a weak candidate
           if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
-            // we might need to move leaders
             if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
-              amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+              // we need to move leaders
+              let diff = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
+              if (diff > stats.perfectAmountOfLeaders) {
+                // do not move too much (more then perfect) shards to the weakest db server
+                amountOfLeadersToMove = stats.perfectAmountOfLeaders - stats.weakestAmountOfLeaders;
+              } else {
+                amountOfLeadersToMove = diff;
+              }
             }
           }
-          if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
-            // we need to move followers
-            amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
+          if (stats.bestAmountOfFollowers > stats.weakestAmountOfFollowers) {
+            if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
+              // we need to move followers
+              let diff = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
+              if (diff > stats.perfectAmountOfFollowers) {
+                // do not move too much (more then perfect) shards to the weakest db server
+                amountOfFollowersToMove = stats.perfectAmountOfFollowers - stats.weakestAmountOfFollowers;
+              } else {
+                amountOfFollowersToMove= diff;
+              }
+            }
           }
 
           if (amountOfFollowersToMove === 0 && amountOfLeadersToMove === 0) {
@@ -814,7 +833,7 @@ exports.run = function (extra, args) {
 
   let scoreFormatter = function (value, disableColor) {
     if (disableColor) {
-      return Number.parseFloat(value).toFixed(2);
+      return Number.parseFloat(value).toFixed(4);
     }
 
     let SHELL_COLOR_RESET = "\x1b[0m";
@@ -829,7 +848,7 @@ exports.run = function (extra, args) {
       selectedColor = SHELL_COLOR_RED;
     }
 
-    return selectedColor + Number.parseFloat(value).toFixed(2) + SHELL_COLOR_RESET;
+    return selectedColor + Number.parseFloat(value).toFixed(4) + SHELL_COLOR_RESET;
   };
 
   let printScoreComparison = function (scores) {
@@ -1073,6 +1092,7 @@ exports.run = function (extra, args) {
    *    Optimizes and changes jobHistory
    */
   // TODO: This needs to be implemented.
+  // TODO: Review: Prevent movement loops between dbservers
 
   /*
    *  Section Create Plan:
