@@ -611,49 +611,36 @@ exports.run = function (extra, args) {
     // candidates[0]: are the "regular collections"
     // candidates[1]: are collections with a single shard
 
-    // TODO: Currently it is random if a "bucket" or a "single shard" is moved
-    // TODO: We should first move buckets around, then single shards!
+
+    let calcAmountToMove = function (bestAmount, weakestAmount, perfectAmount) {
+      let amount = 0;
+
+      if (bestAmount > weakestAmount) {
+        if (bestAmount > perfectAmount) {
+          // we need to move leaders
+          let diff = bestAmount - perfectAmount;
+          if (diff > perfectAmount) {
+            // do not move too much (more then perfect) shards to the weakest db server
+            amount = perfectAmount - weakestAmount;
+          } else {
+            amount = diff;
+          }
+
+          if (bestAmount - amount < perfectAmount) {
+            amount = bestAmount - perfectAmount;
+          }
+        }
+      }
+      return amount;
+    };
 
     // first detect the amount of what (leader/follower) to move
     _.each(candidates[0], function (database, databaseName) {
       _.each(database, function (stats, collectionName) {
-        let amountOfLeadersToMove = 0;
-        let amountOfFollowersToMove = 0;
-
         // calculate a regular collection
         // TODO Review: Do not move more then perfect amount to a weak candidate
-        if (stats.bestAmountOfLeaders > stats.weakestAmountOfLeaders) {
-          if (stats.bestAmountOfLeaders > stats.perfectAmountOfLeaders) {
-            // we need to move leaders
-            let diff = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
-            if (diff > stats.perfectAmountOfLeaders) {
-              // do not move too much (more then perfect) shards to the weakest db server
-              amountOfLeadersToMove = stats.perfectAmountOfLeaders - stats.weakestAmountOfLeaders;
-            } else {
-              amountOfLeadersToMove = diff;
-            }
-
-            if (stats.bestAmountOfLeaders - amountOfLeadersToMove < stats.perfectAmountOfLeaders) {
-              amountOfLeadersToMove = stats.bestAmountOfLeaders - stats.perfectAmountOfLeaders;
-            }
-          }
-        }
-        if (stats.bestAmountOfFollowers > stats.weakestAmountOfFollowers) {
-          if (stats.bestAmountOfFollowers > stats.perfectAmountOfFollowers) {
-            // we need to move followers
-            let diff = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
-            if (diff > stats.perfectAmountOfFollowers) {
-              // do not move too much (more then perfect) shards to the weakest db server
-              amountOfFollowersToMove = stats.perfectAmountOfFollowers - stats.weakestAmountOfFollowers;
-            } else {
-              amountOfFollowersToMove = diff;
-            }
-
-            if (stats.bestAmountOfFollowers - amountOfFollowersToMove < stats.perfectAmountOfFollowers) {
-              amountOfFollowersToMove = stats.bestAmountOfFollowers - stats.perfectAmountOfFollowers;
-            }
-          }
-        }
+        let amountOfLeadersToMove = calcAmountToMove(stats.bestAmountOfLeaders, stats.weakestAmountOfLeaders, stats.perfectAmountOfLeaders)
+        let amountOfFollowersToMove = calcAmountToMove(stats.bestAmountOfFollowers, stats.weakestAmountOfFollowers, stats.perfectAmountOfFollowers)
 
         if (amountOfLeadersToMove === 0 && amountOfFollowersToMove === 0) {
           // no change, quick exit: return same state
@@ -857,7 +844,7 @@ exports.run = function (extra, args) {
     };
 
     // multiple shard description
-    var shardedCollectionsTable = new AsciiTable('Scores - Sharded collections');
+    let shardedCollectionsTable = new AsciiTable('Scores - Sharded collections');
     let tableHeadings = [
       'Server',
       'Database',
@@ -867,7 +854,7 @@ exports.run = function (extra, args) {
     shardedCollectionsTable.setHeading(tableHeadings);
 
     // single shard description
-    var singleShardCollectionsTable = new AsciiTable('Scores - Single sharded collections');
+    let singleShardCollectionsTable = new AsciiTable('Scores - Single sharded collections');
     let singleShardTableHeadings = [
       'Database Server',
       'Amount (old)',
