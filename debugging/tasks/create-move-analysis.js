@@ -36,7 +36,7 @@ exports.run = function (extra, args) {
   const health = dump.arango.Supervision.Health;
 
   // statics
-  const MAX_ITERATIONS = 10;
+  const MAX_ITERATIONS = 200;
   const debug = false;
 
   // Analysis Data Format
@@ -74,6 +74,7 @@ exports.run = function (extra, args) {
   let shardBucketList = {};
 
   // a local list of jobs we did to optimize the plan
+  let shardMoveHistory = [];
   let jobHistory = [];
 
   // end globals
@@ -456,13 +457,7 @@ exports.run = function (extra, args) {
       });
     });
 
-    return [sortCandidates(candidates), checkSingleShardCollectionCandidates(singleShardCollectionDistribution)];
-  };
-
-  let sortCandidates = function (candidates) {
-    // TODO: needs to be implemented (bucket first)
-    // print(candidates);
-    return candidates;
+    return [candidates, checkSingleShardCollectionCandidates(singleShardCollectionDistribution)];
   };
 
   let calculateAmountOfCollectionShards = function (collection, database, withoutReplication) {
@@ -481,7 +476,7 @@ exports.run = function (extra, args) {
     // Single shard collections
     let amount = 0;
     _.each(collections, function (collection) {
-      amount += calculateAmountOfCollectionShards(collection.collection, collection.database, false)
+      amount += calculateAmountOfCollectionShards(collection.collection, collection.database, true)
     });
     return amount;
   };
@@ -506,13 +501,8 @@ exports.run = function (extra, args) {
     };
 
     _.each(singleShardCollectionDistribution, function (dbServer, databaseServerName) {
-
-      _.each(dbServer.leaders, function (cEntity) {
-        result.distribution.totalAmountOfLeaders += calculateAmountOfCollectionShards(cEntity.collection, cEntity.database);
-      });
-      _.each(dbServer.followers, function (cEntity) {
-        result.distribution.totalAmountOfFollowers += calculateAmountOfCollectionShards(cEntity.collection, cEntity.database);
-      });
+      result.distribution.totalAmountOfLeaders += calculateAmountOfDatabaseShards(dbServer.leaders);
+      result.distribution.totalAmountOfFollowers += calculateAmountOfDatabaseShards(dbServer.followers);
 
       if (result.distribution.weakestAmountOfLeaders === null || calculateAmountOfDatabaseShards(dbServer.leaders) < result.distribution.weakestAmountOfLeaders) {
         result.distribution.weakestAmountOfLeaders = calculateAmountOfDatabaseShards(dbServer.leaders);
@@ -526,7 +516,7 @@ exports.run = function (extra, args) {
         result.distribution.bestAmountOfLeaders = calculateAmountOfDatabaseShards(dbServer.leaders);
         result.distribution.bestLeaderDatabaseServer = databaseServerName;
       }
-      if (result.distribution.bestAmountOfFollowers === null || calculateAmountOfDatabaseShards(dbServer.followers) < result.distribution.bestAmountOfFollowers) {
+      if (result.distribution.bestAmountOfFollowers === null || calculateAmountOfDatabaseShards(dbServer.followers) > result.distribution.bestAmountOfFollowers) {
         result.distribution.bestAmountOfFollowers = calculateAmountOfDatabaseShards(dbServer.followers);
         result.distribution.bestFollowerDatabaseServer = databaseServerName;
       }
@@ -542,6 +532,14 @@ exports.run = function (extra, args) {
                                          collectionName, isLeader, analysisData, databaseName) {
     // move shards in our local state only
     let success = false;
+
+    if (shardMoveHistory.indexOf(shardId) !== -1) {
+      // we already moved that shard and will not move it again
+      return {
+        success: success,
+        data: null
+      }
+    }
 
     if (fromDBServer === toDBServer) {
       if (debug) {
@@ -589,6 +587,9 @@ exports.run = function (extra, args) {
     }
 
     if (success) {
+      // store shardId in shardMoveHistory, to forbid further moves of the same shard
+      shardMoveHistory.push(shardId);
+
       // persist action history in local jobHistory
       jobHistory.push({
         // action: "moveShard",
@@ -648,7 +649,7 @@ exports.run = function (extra, args) {
 
         // now iterate through current state and start moving (local only!)
         for (let [databaseNameInner, databaseInner] of Object.entries(analysisData)) {
-          if (databaseInner[collectionName] && databaseName === databaseNameInner) { // if collection got found inside that database // TODO: @michael verify pls if correct
+          if (databaseInner[collectionName] && databaseName === databaseNameInner) { // if collection got found inside that database
             for (let [shardId, shard] of Object.entries(databaseInner[collectionName])) {
               if (shard.distribution[0] === stats.mostFilledDatabaseServer) {
                 // we found the best db server as leader for the current shard
@@ -700,57 +701,65 @@ exports.run = function (extra, args) {
     let singleShardInfo = candidates[1].info;
     let singleShardDistribution = candidates[1].distribution;
 
+    let moveHelper = function (bestAmount, perfectAmount, bestDatabaseServer, weakestDatabaseServer, leader) {
+      if (bestAmount > perfectAmount) {
+        let totalAmountToMove = bestAmount - perfectAmount;
+        let collectionsToBeMoved = [];
+
+        let toIterate;
+        if (leader) {
+          toIterate = singleShardInfo[bestDatabaseServer].leaders;
+        } else {
+          toIterate = singleShardInfo[bestDatabaseServer].followers;
+        }
+
+        let amountAfterMove = totalAmountToMove;
+
+        _.each(toIterate, function (collection) {
+          let sAmount = calculateAmountOfCollectionShards(collection.collection, collection.database, true);
+
+          if (amountAfterMove - sAmount >= 0) {
+            // only if we do not drop below zero, we can to continue sum up shards to move
+            amountAfterMove -= sAmount;
+            collectionsToBeMoved.push(collection);
+          } else {
+            if (debug) {
+              print("We cannot move collection: " + collection.collection + "")
+            }
+          }
+        });
+
+        _.each(collectionsToBeMoved, function (cEntity) {
+          let shardId = Object.keys(analysisData[cEntity.database][cEntity.collection])[0];
+          let result = moveSingleShardLocally(
+            shardId, bestDatabaseServer, weakestDatabaseServer,
+            cEntity.collection, leader, analysisData, cEntity.database
+          );
+          if (result.success) {
+            analysisData = result.data;
+          } else {
+          }
+        });
+      }
+    };
+
     // leaders
-    if (singleShardDistribution.bestAmountOfLeaders > singleShardDistribution.perfectAmountOfLeaders) {
-      let amountOfLeadersToMove = singleShardDistribution.bestAmountOfLeaders - singleShardDistribution.perfectAmountOfLeaders;
-
-      let collectionsToBeMoved = [];
-      _.each(singleShardInfo[singleShardDistribution.bestLeaderDatabaseServer].leaders, function (leader) {
-        let sAmount = calculateAmountOfCollectionShards(leader.collection, leader.database, true);
-
-        if (amountOfLeadersToMove - sAmount >= 0 && amountOfLeadersToMove - sAmount >= singleShardDistribution.perfectAmountOfLeaders) {
-          collectionsToBeMoved.push(leader);
-          amountOfLeadersToMove -= sAmount;
-        }
-      });
-
-      _.each(collectionsToBeMoved, function (cEntity) {
-        let shardId = Object.keys(analysisData[cEntity.database][cEntity.collection])[0];
-        let result = moveSingleShardLocally(
-          shardId, singleShardDistribution.bestLeaderDatabaseServer, singleShardDistribution.weakestLeaderDatabaseServer,
-          cEntity.collection, true, analysisData, cEntity.database
-        );
-        if (result.success) {
-          analysisData = result.data;
-        }
-      });
-    }
+    moveHelper(
+      singleShardDistribution.bestAmountOfLeaders,
+      singleShardDistribution.perfectAmountOfLeaders,
+      singleShardDistribution.bestLeaderDatabaseServer,
+      singleShardDistribution.weakestLeaderDatabaseServer,
+      true
+    );
 
     // followers
-    if (singleShardDistribution.bestAmountOfFollowers > singleShardDistribution.perfectAmountOfFollowers) {
-      let amountOfFollowersToMove = singleShardDistribution.bestAmountOfFollowers - singleShardDistribution.perfectAmountOfFollowers;
-      let collectionsToBeMoved = singleShardDistribution.bestAmountOfFollowers - singleShardDistribution.perfectAmountOfFollowers;
-
-      _.each(singleShardInfo[singleShardDistribution.bestFollowerDatabaseServer].followers, function (follower) {
-        let sAmount = calculateAmountOfCollectionShards(follower.collection, follower.database, true);
-
-        if (amountOfFollowersToMove - sAmount >= 0 && amountOfFollowersToMove - sAmount >= singleShardDistribution.perfectAmountOfFollowers) {
-          collectionsToBeMoved.push(follower);
-          amountOfFollowersToMove -= sAmount;
-        }
-      });
-
-      _.each(collectionsToBeMoved, function (cEntity) {
-        let shardId = Object.keys(analysisData[cEntity.database][cEntity.collection])[0];
-        let result = moveSingleShardLocally(
-          shardId, singleShardDistribution.bestFollowerDatabaseServer, singleShardDistribution.weakestFollowerDatabaseServer,
-          cEntity.collection, false, analysisData, cEntity.database // TODO: check isLeader flag
-        );
-        if (result.success) {
-          analysisData = result.data;
-        }
-      });
-    }
+    moveHelper(
+      singleShardDistribution.bestAmountOfFollowers,
+      singleShardDistribution.perfectAmountOfFollowers,
+      singleShardDistribution.bestFollowerDatabaseServer,
+      singleShardDistribution.weakestFollowerDatabaseServer,
+      false
+    );
 
     return analysisData;
   };
@@ -788,8 +797,15 @@ exports.run = function (extra, args) {
   scores.push(calculateCollectionsScore(analysisData));
 
   let scoreFormatter = function (value, disableColor) {
+    let spacing = "";
+    if (value === 0) {
+      spacing = "  ";
+    } else if (value < 1) {
+      spacing = " ";
+    }
+
     if (disableColor) {
-      return Number.parseFloat(value).toFixed(4);
+      return spacing + (Number.parseFloat(value * 100)).toFixed(2) + "%";
     }
 
     let SHELL_COLOR_RESET = "\x1b[0m";
@@ -804,7 +820,7 @@ exports.run = function (extra, args) {
       selectedColor = SHELL_COLOR_RED;
     }
 
-    return selectedColor + Number.parseFloat(value).toFixed(4) + SHELL_COLOR_RESET;
+    return spacing + selectedColor + (Number.parseFloat(value * 100)).toFixed(2) + "%" + SHELL_COLOR_RESET;
   };
 
   let printScoreComparison = function (scores) {
@@ -835,7 +851,7 @@ exports.run = function (extra, args) {
     let start = scores[0];
     let end = scores[scores.length - 1];
     let amountOfSingleShardCollectionsPerDB = {};
-    let foundAtLeastOneShardedCollection = false;
+    let foundAtLeastAShardedCollection = false;
     let collectionStatistics = {
       optimized: 0,
       degraded: 0,
@@ -884,7 +900,7 @@ exports.run = function (extra, args) {
               totalSingleShardCollections += amount;
             }
           } else {
-            foundAtLeastOneShardedCollection = true;
+            foundAtLeastAShardedCollection = true;
             shardedCollectionsTable.addRow([
               databaseServerName,
               databaseName,
@@ -917,12 +933,13 @@ exports.run = function (extra, args) {
       });
     });
 
-    if (foundAtLeastOneShardedCollection) {
+    if (foundAtLeastAShardedCollection) {
       print("");
       print(shardedCollectionsTable.toString());
       printScoreChange(collectionStatistics);
       print("");
     }
+
     if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
       let bestDistribution = Math.round(totalSingleShardCollections / info.dbServerNames.length);
       _.each(amountOfSingleShardCollectionsPerDB, function (databaseServer, databaseServerName) {
@@ -945,12 +962,12 @@ exports.run = function (extra, args) {
           }
         }
 
-
         countScoreChange(
           singleShardCollectionStatistics,
           scoreStart,
           scoreEnd
         );
+
         singleShardCollectionsTable.addRow([
           databaseServerName,
           databaseServer.start,
