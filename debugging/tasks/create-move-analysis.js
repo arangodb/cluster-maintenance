@@ -1086,31 +1086,6 @@ exports.run = function (extra, args) {
     print("No actions could be created. Exiting.")
   }
 
-  /*
-   *  DEBUG PRINTS (can be removed later)
-   */
-  if (debug) {
-    print("");
-    print("=== Debug ===");
-    print("");
-    print("Available DBServers: " + info.amountOfDatabaseServers);
-    _.each(initAgencyCollections, function (collections) {
-      _.each(collections, function (collection, cId) {
-        //print(collection.name);
-        if (collection.name === "TrendingThreats") {
-          //  print("===========");
-          // print(collection);
-          //    print("Sharding after: " + collectionNamesMap[collection.distributeShardsLike]);
-        }
-      });
-    });
-    // print(scores);
-    // print(shardBucketList);
-    // print(Object.keys(initAgencyCollections));
-    // print(jobHistory);
-    // print(agencyDatabases);
-  }
-
   // print(analysisData);
   print("");
 };
