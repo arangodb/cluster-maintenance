@@ -1062,16 +1062,6 @@ exports.run = function (extra, args) {
   print("Potential actions found in total: " + jobHistory.length);
 
   /*
-   *  Section Optimize Plan:
-   *    Remove possible duplicates out of the plan, if they occur!
-   *
-   *  Rewrites:
-   *    Optimizes and changes jobHistory
-   */
-  // TODO: This needs to be implemented.
-  // TODO: Review: Prevent movement loops between dbservers
-
-  /*
    *  Section Create Plan:
    *    Actually create the plan, if we have found a good result distribution.
    *
