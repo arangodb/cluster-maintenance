@@ -638,9 +638,8 @@ exports.run = function (extra, args) {
     _.each(candidates[0], function (database, databaseName) {
       _.each(database, function (stats, collectionName) {
         // calculate a regular collection
-        // TODO Review: Do not move more then perfect amount to a weak candidate
-        let amountOfLeadersToMove = calcAmountToMove(stats.bestAmountOfLeaders, stats.weakestAmountOfLeaders, stats.perfectAmountOfLeaders)
-        let amountOfFollowersToMove = calcAmountToMove(stats.bestAmountOfFollowers, stats.weakestAmountOfFollowers, stats.perfectAmountOfFollowers)
+        let amountOfLeadersToMove = calcAmountToMove(stats.bestAmountOfLeaders, stats.weakestAmountOfLeaders, stats.perfectAmountOfLeaders);
+        let amountOfFollowersToMove = calcAmountToMove(stats.bestAmountOfFollowers, stats.weakestAmountOfFollowers, stats.perfectAmountOfFollowers);
 
         if (amountOfLeadersToMove === 0 && amountOfFollowersToMove === 0) {
           // no change, quick exit: return same state
