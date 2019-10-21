@@ -1036,7 +1036,7 @@ exports.run = function (extra, args) {
   print("");
   print("===== Optimizations =====");
   print("");
-  print("Optimizing ...");
+  print("Trying to optimize ...");
   let optimizedIterations = []; // TODO: We should consider removing this for better performance
   optimizedIterations.push(moveShardsLocally(candidates[candidates.length - 1], analysisData));
   scores.push(calculateCollectionsScore(analysisData));
@@ -1053,7 +1053,7 @@ exports.run = function (extra, args) {
     optimizedIterations.push(moveShardsLocally(candidates[candidates.length - 1], optimizedIterations[optimizedIterations.length - 1]));
     scores.push(calculateCollectionsScore(optimizedIterations[candidates.length - 1]));
 
-    if (oldJobHistoryLenght == jobHistory.length) {
+    if (oldJobHistoryLenght === jobHistory.length && jobHistory.length !== 0) {
       // we did not find any new possible optimizations.
       print("Done. No more optimizations could be added.")
       break;
