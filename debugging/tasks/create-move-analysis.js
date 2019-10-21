@@ -938,6 +938,9 @@ exports.run = function (extra, args) {
       print(shardedCollectionsTable.toString());
       printScoreChange(collectionStatistics);
       print("");
+    } else {
+      print();
+      print("Not able to optimize sharded (numberOfShards > 1) collections.");
     }
 
     if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
@@ -975,9 +978,14 @@ exports.run = function (extra, args) {
           scoreFormatter(scoreStart) + " -> " + scoreFormatter(scoreEnd)
         ]);
       });
-      print("");
-      print(singleShardCollectionsTable.toString());
-      printScoreChange(singleShardCollectionStatistics);
+
+      if (singleShardCollectionStatistics.optimized === 0 && singleShardCollectionStatistics.degraded === 0) {
+        print("Not able to optimize single sharded (numberOfShards = 1) collections.");
+      } else {
+        print("");
+        print(singleShardCollectionsTable.toString());
+        printScoreChange(singleShardCollectionStatistics);
+      }
       print("");
     }
   };
