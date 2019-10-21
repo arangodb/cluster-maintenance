@@ -266,7 +266,7 @@ const checkArgs = (task, args) => {
 };
 
 const getValue = (name, args) => {
-  //handle defualt vaules here?
+  //handle default values here?
   const rv = args.find( x  => x.name === name );
   if( rv === undefined) {
       fatal("Trying to access undefined argument: '" + name + "'");
