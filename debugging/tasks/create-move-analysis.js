@@ -74,7 +74,8 @@ exports.run = function (extra, args) {
   let shardBucketList = {};
 
   // a local list of jobs we did to optimize the plan
-  let shardMoveHistory = [];
+  let shardLeaderMoveHistory = [];
+  let shardFollowerMoveHistory = [];
   let jobHistory = [];
 
   // end globals
@@ -533,11 +534,23 @@ exports.run = function (extra, args) {
     // move shards in our local state only
     let success = false;
 
-    if (shardMoveHistory.indexOf(shardId) !== -1) {
-      // we already moved that shard and will not move it again
-      return {
-        success: success,
-        data: null
+    if (isLeader) {
+      if (shardLeaderMoveHistory.indexOf(shardId) !== -1) {
+        print("already moved that leader shard.");
+        // we already moved that shard and will not move it again
+        return {
+          success: success,
+          data: null
+        }
+      }
+    } else {
+      if (shardFollowerMoveHistory.indexOf(shardId) !== -1) {
+        print("already moved that follower shard.");
+        // we already moved that shard and will not move it again
+        return {
+          success: success,
+          data: null
+        }
       }
     }
 
@@ -588,7 +601,11 @@ exports.run = function (extra, args) {
 
     if (success) {
       // store shardId in shardMoveHistory, to forbid further moves of the same shard
-      shardMoveHistory.push(shardId);
+      if (isLeader) {
+        shardLeaderMoveHistory.push(shardId);
+      } else {
+        shardFollowerMoveHistory.push(shardId);
+      }
 
       // persist action history in local jobHistory
       jobHistory.push({
@@ -737,7 +754,6 @@ exports.run = function (extra, args) {
           );
           if (result.success) {
             analysisData = result.data;
-          } else {
           }
         });
       }
@@ -872,8 +888,12 @@ exports.run = function (extra, args) {
     let singleShardCollectionsTable = new AsciiTable('Scores - Single sharded collections');
     let singleShardTableHeadings = [
       'Database Server',
-      'Amount (old)',
-      'Amount (new)',
+      'Shards',
+      'Shards (new)',
+      'Leaders',
+      'Leaders (new)',
+      'Follower',
+      'Follower (new)',
       'Score'
     ];
     singleShardCollectionsTable.setHeading(singleShardTableHeadings);
@@ -891,11 +911,20 @@ exports.run = function (extra, args) {
             if (!amountOfSingleShardCollectionsPerDB[databaseServerName]) {
               amountOfSingleShardCollectionsPerDB[databaseServerName] = {
                 start: 0,
-                end: 0
+                end: 0,
+                leaderStart: 0,
+                followerStart: 0,
+                leaderEnd: 0,
+                followerEnd: 0
               };
             }
             if (collection.distribution.shardTotalAmount === 1) {
               let amount = calculateAmountOfCollectionShards(collectionName, databaseName, true);
+              if (collection.distribution.shardLeaderAmount === 1) {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].leaderStart += amount;
+              } else {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].followerStart += amount;
+              }
               amountOfSingleShardCollectionsPerDB[databaseServerName].start += amount;
               totalSingleShardCollections += amount;
             }
@@ -926,6 +955,11 @@ exports.run = function (extra, args) {
           if (collection.distribution.singleShardCollection) {
             if (collection.distribution.shardTotalAmount === 1) {
               let amount = calculateAmountOfCollectionShards(collectionName, databaseName, true);
+              if (collection.distribution.shardLeaderAmount === 1) {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].leaderEnd += amount;
+              } else {
+                amountOfSingleShardCollectionsPerDB[databaseServerName].followerEnd += amount;
+              }
               amountOfSingleShardCollectionsPerDB[databaseServerName].end += amount;
             }
           }
@@ -950,19 +984,11 @@ exports.run = function (extra, args) {
         let scoreStart = 0;
 
         if (databaseServer.start !== 0) {
-          if (databaseServer.start < bestDistribution) {
-            scoreStart = databaseServer.start / bestDistribution;
-          } else {
-            scoreStart = bestDistribution / databaseServer.start;
-          }
+           scoreStart = databaseServer.start / bestDistribution;
         }
 
         if (databaseServer.end !== 0) {
-          if (databaseServer.end > bestDistribution) {
-            scoreEnd = bestDistribution / databaseServer.end;
-          } else {
-            scoreEnd = databaseServer.end / bestDistribution;
-          }
+          scoreEnd = databaseServer.end / bestDistribution;
         }
 
         countScoreChange(
@@ -975,6 +1001,10 @@ exports.run = function (extra, args) {
           databaseServerName,
           databaseServer.start,
           databaseServer.end,
+          databaseServer.leaderStart,
+          databaseServer.leaderEnd,
+          databaseServer.followerStart,
+          databaseServer.followerEnd,
           scoreFormatter(scoreStart) + " -> " + scoreFormatter(scoreEnd)
         ]);
       });
