@@ -529,11 +529,13 @@ exports.run = function (extra, args) {
     return result;
   };
 
+  let potentialOptimizations = false;
   let moveSingleShardLocally = function (shardId, fromDBServer, toDBServer,
                                          collectionName, isLeader, analysisData, databaseName) {
     // move shards in our local state only
     let success = false;
 
+    /*
     if (isLeader) {
       if (shardLeaderMoveHistory.indexOf(shardId) !== -1) {
         print("already moved that leader shard.");
@@ -551,6 +553,16 @@ exports.run = function (extra, args) {
           success: success,
           data: null
         }
+      }
+    }
+    */
+
+    // TODO: re-enable upper logic, this needs some chnages in our agency!
+    if (shardLeaderMoveHistory.indexOf(shardId) !== -1 || shardFollowerMoveHistory.indexOf(shardId) !== -1) {
+      potentialOptimizations = true;
+      return {
+        success: success,
+        data: null
       }
     }
 
@@ -1112,6 +1124,22 @@ exports.run = function (extra, args) {
     print("Written to file: \"moveShardsPlan.json\"");
   } else {
     print("No actions could be created. Exiting.")
+  }
+
+  if (potentialOptimizations) {
+    print();
+    print("=== Info ===");
+    print();
+    print("There are optimizations which could not been handled in this run. After");
+    print("all started operations are done, feel free to re-use that script again.");
+    print("This will lead to a better overall distribution, if you're not satisfied");
+    print("with the current scores yet.");
+    print();
+    print("Use \"execute-move-plan\" to execute the created \"moveShardsPlan.json\"");
+    print();
+    print("Use \"show-move-shards\" to track the current progress of your move shard");
+    print("jobs. If there are no operations left, you can continue with the next");
+    print("optimization iteration.");
   }
 
   // print(analysisData);
