@@ -757,7 +757,6 @@ exports.run = function (extra, args) {
         });
 
         _.each(collectionsToBeMoved, function (cEntity) {
-          print(cEntity)
           let shardId = Object.keys(analysisData[cEntity.database][cEntity.collectionId])[0];
           let result = moveSingleShardLocally(
             shardId, bestDatabaseServer, weakestDatabaseServer,
@@ -979,13 +978,15 @@ exports.run = function (extra, args) {
     });
 
     if (foundAtLeastAShardedCollection) {
-      print("");
-      print(shardedCollectionsTable.toString());
-      printScoreChange(collectionStatistics);
-      print("");
-    } else {
-      print();
-      print("Not able to optimize sharded (numberOfShards > 1) collections.");
+      if (collectionStatistics.optimized === 0 && collectionStatistics.degraded === 0) {
+        print();
+        print("No possibilities to optimize sharded (numberOfShards > 1) collections.");
+      } else {
+        print();
+        print(shardedCollectionsTable.toString());
+        printScoreChange(collectionStatistics);
+        print();
+      }
     }
 
     if (Object.keys(amountOfSingleShardCollectionsPerDB).length > 0) {
@@ -1021,7 +1022,7 @@ exports.run = function (extra, args) {
       });
 
       if (singleShardCollectionStatistics.optimized === 0 && singleShardCollectionStatistics.degraded === 0) {
-        print("Not able to optimize single sharded (numberOfShards = 1) collections.");
+        print("No possibilities to optimize single sharded (numberOfShards = 1) collections.");
       } else {
         print("");
         print(singleShardCollectionsTable.toString());
@@ -1121,24 +1122,26 @@ exports.run = function (extra, args) {
   if (jobHistory.length > 0) {
     fs.write("moveShardsPlan.json", JSON.stringify(jobHistory));
     print("Written to file: \"moveShardsPlan.json\"");
-  } else {
-    print("No actions could be created. Exiting.")
-  }
 
-  if (potentialOptimizations) {
     print();
     print("=== Info ===");
-    print();
-    print("There are optimizations which could not been handled in this run. After");
-    print("all started operations are done, feel free to re-use that script again.");
-    print("This will lead to a better overall distribution, if you're not satisfied");
-    print("with the current scores yet.");
+    if (potentialOptimizations) {
+      print();
+      print("There are optimizations which could not been handled in this run. After");
+      print("all started operations are done, feel free to re-use that script again.");
+      print("This will lead to a better overall distribution, if you're not satisfied");
+      print("with the current scores yet.");
+    }
     print();
     print("Use \"execute-move-plan\" to execute the created \"moveShardsPlan.json\"");
+    print("  -> Use a coordinator endpoint");
     print();
     print("Use \"show-move-shards\" to track the current progress of your move shard");
     print("jobs. If there are no operations left, you can continue with the next");
     print("optimization iteration.");
+    print("  -> Use the agency leader endpoint");
+  } else {
+    print("No optimizations are available. Exiting.")
   }
 
   // print(analysisData);
