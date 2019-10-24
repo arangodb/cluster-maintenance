@@ -1,7 +1,7 @@
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango, db */
 exports.name = "post-agency-plan";
-exports.group = "Post an agency plan to a new leader agency. Only for debug purpose!";
+exports.group = "Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!";
 exports.args = [
   {"name": "dump-file", "optional": false, "type": "jsonfile", "description": "agency dump file"}
 ];
