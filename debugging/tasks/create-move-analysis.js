@@ -731,7 +731,6 @@ exports.run = function (extra, args) {
     let moveHelper = function (bestAmount, perfectAmount, bestDatabaseServer, weakestDatabaseServer, leader) {
       if (bestAmount > perfectAmount) {
         let totalAmountToMove = bestAmount - perfectAmount;
-        let collectionsToBeMoved = [];
 
         let toIterate;
         if (leader) {
@@ -747,23 +746,23 @@ exports.run = function (extra, args) {
 
           if (amountAfterMove - sAmount >= 0) {
             // only if we do not drop below zero, we can to continue sum up shards to move
-            amountAfterMove -= sAmount;
-            collectionsToBeMoved.push(collection);
+            let shardId = Object.keys(analysisData[collection.database][collection.collectionId])[0];
+            let result = moveSingleShardLocally(
+              shardId, bestDatabaseServer, weakestDatabaseServer,
+              collection.collectionId, leader, analysisData, collection.database
+            );
+            if (result.success) {
+              analysisData = result.data;
+              amountAfterMove -= sAmount;
+            } else {
+              if (debug) {
+                print("Not able to move. Rules in moveSingleShardLocally restrict it.")
+              }
+            }
           } else {
             if (debug) {
-              print("We cannot move collection: " + collection.collectionId + "")
+              print("We cannot move collection: " + collection.collectionId + ". Too much shards would be moved.")
             }
-          }
-        });
-
-        _.each(collectionsToBeMoved, function (cEntity) {
-          let shardId = Object.keys(analysisData[cEntity.database][cEntity.collectionId])[0];
-          let result = moveSingleShardLocally(
-            shardId, bestDatabaseServer, weakestDatabaseServer,
-            cEntity.collectionId, leader, analysisData, cEntity.database
-          );
-          if (result.success) {
-            analysisData = result.data;
           }
         });
       }
