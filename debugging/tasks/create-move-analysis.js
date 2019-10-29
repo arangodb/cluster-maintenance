@@ -476,7 +476,7 @@ exports.run = function (extra, args) {
     // Single shard collections
     let amount = 0;
     _.each(collections, function (collection) {
-      amount += calculateAmountOfCollectionShards(collection.id, collection.database, true)
+      amount += calculateAmountOfCollectionShards(collection.collectionId, collection.database, true)
     });
     return amount;
   };
@@ -756,12 +756,12 @@ exports.run = function (extra, args) {
               amountAfterMove -= sAmount;
             } else {
               if (debug) {
-                print("Not able to move. Rules in moveSingleShardLocally restrict it.")
+                print("Not able to move. Rules in moveSingleShardLocally restrict it.");
               }
             }
           } else {
             if (debug) {
-              print("We cannot move collection: " + collection.collectionId + ". Too much shards would be moved.")
+              print("We cannot move collection: " + collection.collectionId + ". Too much shards would be moved.");
             }
           }
         });
@@ -1143,6 +1143,5 @@ exports.run = function (extra, args) {
     print("No optimizations are available. Exiting.")
   }
 
-  // print(analysisData);
   print("");
 };
