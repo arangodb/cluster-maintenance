@@ -731,6 +731,9 @@ exports.run = function (extra, args) {
     let moveHelper = function (bestAmount, perfectAmount, bestDatabaseServer, weakestDatabaseServer, leader) {
       if (bestAmount > perfectAmount) {
         let totalAmountToMove = bestAmount - perfectAmount;
+	if (totalAmountToMove > perfectAmount) {
+          totalAmountToMove = perfectAmount
+        }
 
         let toIterate;
         if (leader) {
