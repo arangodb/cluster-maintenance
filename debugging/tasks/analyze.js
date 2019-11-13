@@ -48,6 +48,28 @@ exports.run = function(extra, args) {
     info.primariesAll = primariesAll;
   };
 
+  let zombieCoordinators = function (info, dump) {
+    let plannedCoords = dump.arango.Plan.Coordinators;
+    let currentCoords = dump.arango.Current.Coordinators;
+
+    const health = dump.arango.Supervision.Health;
+    var zombies = [];
+    
+    _.each(Object.keys(currentCoords), function (id) {
+      if (!plannedCoords.hasOwnProperty(id)) {
+        zombies.push(id);
+      }
+    });
+
+    info.zombieCoordinators = zombies;
+    if (zombies.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
+    
+  };
+
   let printPrimaries = function (info) {
     var table = new AsciiTable('Primaries');
     table.setHeading('', 'status');
@@ -59,6 +81,17 @@ exports.run = function(extra, args) {
     print(table.toString());
   };
 
+  let printZombieCoordinators = function (info) {
+    var haveZombies = info.zombieCoordinators.length > 0;
+    if (!haveZombies) {
+      printGood('Your cluster does not have any zombie coordinators');
+      return false;
+    } else {
+      printBad('Your cluster has zombie coordinators');
+      return true;
+    }
+  };
+  
   let setGlobalShard = function (info, shard) {
     let dbServer = shard.dbServer;
     let isLeader = shard.isLeader;
@@ -572,6 +605,15 @@ exports.run = function(extra, args) {
     }
   };
 
+  let saveZombieCoords = function (info) {
+    if (info.zombieCoordinators.length > 0) {
+      fs.write("zombie-coordinators.json", JSON.stringify(info.zombieCoordinators));
+      print("To remedy the zombie coordinators issue please run the task `remove-zombie-coordinators` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombie-coordinators ${fs.makeAbsolute('zombie-coordinators.json')}`);
+      print();
+    }
+  };
+
   let printBroken = function (info) {
     if (0 < info.broken.length) {
       printBad('Your cluster has broken collections');
@@ -815,6 +857,7 @@ exports.run = function(extra, args) {
   // extract info
   extractPrimaries(info, dump);
   extractDatabases(info, dump);
+  zombieCoordinators(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractDistributionGroups(info, dump);
@@ -835,15 +878,13 @@ exports.run = function(extra, args) {
   print();
 
   infected = printZombies(info) || infected;
+  infected = printZombieCoordinators(info) || infected
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   infected = printEmptyDatabases(info) || infected;
   infected = printMissingCollections(info) || infected;
   infected = printOutOfSyncFollowers(info) || infected;
-
-  print();
-
   infected = printDistributionGroups(info) || infected;
   print();
 
@@ -851,6 +892,7 @@ exports.run = function(extra, args) {
     // Save to files
     saveCollectionIntegrity(info);
     saveZombies(info);
+    saveZombieCoords(info);
     saveCurrentDatabasesDeadPrimaries(info);
     saveDistributionGroups(info);
     saveEmptyDatabases(info);
