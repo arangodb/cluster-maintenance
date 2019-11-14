@@ -18,7 +18,7 @@ primaries or creation of missing system collections.
 exports.run = function(extra, args) {
   // imports
   const fs = require('fs');
-  const _ = require('underscore');
+  const _ = require('lodash');
   const AsciiTable = require('../3rdParty/ascii-table');
   const helper = require('../helper.js');
 
@@ -91,6 +91,20 @@ exports.run = function(extra, args) {
       return true;
     }
   };
+
+  let printCleanedFailoverCandidates = function (info) {
+    var haveCleanedFailovers = (0 < Object.keys(info.correctFailoverCandidates).length);
+    if (!haveCleanedFailovers) {
+      printGood('Your cluster does not have any cleaned servers for failover');
+      return false;
+    } else {
+      printBad('Your cluster has cleaned servers scheduled for failover');
+      return true;
+    }
+  };
+
+
+
   
   let setGlobalShard = function (info, shard) {
     let dbServer = shard.dbServer;
@@ -614,6 +628,15 @@ exports.run = function(extra, args) {
     }
   };
 
+  let saveCleanedFailoverCandidates = function (info) {
+    if (0 < Object.keys(info.correctFailoverCandidates).length) {
+      fs.write("cleaned-failovers.json", JSON.stringify(info.correctFailoverCandidates));
+      print("To remedy the cleaned out failover db servers issue please run the task `remove-cleaned-failovers` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-cleaned-failovers ${fs.makeAbsolute('cleaned-failovers.json')}`);
+      print();
+    }
+  };
+
   let printBroken = function (info) {
     if (0 < info.broken.length) {
       printBad('Your cluster has broken collections');
@@ -685,7 +708,6 @@ exports.run = function(extra, args) {
 
   let extractEmptyDatabases = function (info) {
     info.emptyDatabases = [];
-
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
       if (database.collections.length === 0 && database.shards.length === 0) {
         info.emptyDatabases.push(database);
@@ -778,6 +800,29 @@ exports.run = function(extra, args) {
     }
   };
 
+  let extractCleanedFailoverCandidates = (info, dump) => {
+    const currentCollections = dump.arango.Current.Collections;
+    const cleanedServers = dump.arango.Target.CleanedServers;
+    var fixes = {};
+    Object.keys(currentCollections).forEach(function (dbname) {
+      var database = dump.arango.Current.Collections[dbname];
+      Object.keys(database).forEach(function(colname) {
+        var collection = database[colname];
+        Object.keys(collection).forEach(function(shname) {
+          var shard = collection[shname];
+          var inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
+          var left = shard.failoverCandidates;
+          left = _.difference(left, inter);
+          if (inter.length > 0) {
+            fixes["arango/Current/Collections/"+ dbname +"/"+ colname +"/"+ shname + "/failoverCandidates"]
+              = [left, shard.failoverCandidates];
+          }
+        });
+      });
+    });
+    info.correctFailoverCandidates = fixes;
+  };
+
   let extractOutOfSyncFollowers = (info, dump) => {
     const planCollections = dump.arango.Plan.Collections;
     const currentCollections = dump.arango.Current.Collections;
@@ -864,6 +909,7 @@ exports.run = function(extra, args) {
   extractEmptyDatabases(info);
   extractMissingCollections(info);
   extractOutOfSyncFollowers(info, dump);
+  extractCleanedFailoverCandidates(info, dump);
 
   let infected = false;
 
@@ -878,7 +924,8 @@ exports.run = function(extra, args) {
   print();
 
   infected = printZombies(info) || infected;
-  infected = printZombieCoordinators(info) || infected
+  infected = printZombieCoordinators(info) || infected;
+  infected = printCleanedFailoverCandidates(info) || infected
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
@@ -897,6 +944,7 @@ exports.run = function(extra, args) {
     saveDistributionGroups(info);
     saveEmptyDatabases(info);
     saveMissingCollections(info);
+    saveCleanedFailoverCandidates(info);
   } else {
     printGood('Did not detect any issues in your cluster');
   }
