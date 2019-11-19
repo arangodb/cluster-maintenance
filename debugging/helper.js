@@ -182,6 +182,7 @@ const getAgencyDumpFromObjectOrAgency = (obj = undefined) => {
  *     - string
  *     - int
  *     - jsonfile (value will be the parsed object)
+ *     - boolean
  *
  *  Usage in script:
  *
@@ -202,7 +203,7 @@ const printUsage = (task) => {
   };
 
   let arangosh = "";
-  if(typeof task.args_arangosh === "string") {
+  if (typeof task.args_arangosh === "string") {
     arangosh = task.args_arangosh;
   }
 
@@ -232,23 +233,32 @@ const checkArgs = (task, args) => {
   const proArgs = args.length;
   const reqArgs = countArgs(task.args);
 
-  if(proArgs < reqArgs) {
+  if (proArgs < reqArgs) {
     printUsage(task);
     fatal("Not enough arguments - "
           + proArgs  + " arguments provided while "
           + reqArgs + " required!");
   }
 
-  for(let i = 0; i < proArgs; i++) {
+  for (let i = 0; i < proArgs; i++) {
     let given = args[i];
     let toSet = task.args[i];
     try {
-      switch(toSet.type) {
+      switch (toSet.type) {
       case 'string':
         toSet.value = given;
         break;
       case 'jsonfile':
         toSet.value = readJsonFile(given, true /*must read*/);
+        break;
+      case 'boolean':
+      case 'bool':
+        let v = given.toLowerCase();
+        if (v === 'true' || v === '1' || v === 'y') {
+          toSet.value = true;
+        } else {
+          toSet.value = false;
+        }
         break;
       case 'int':
         toSet.value = Number.parseInt(given);
@@ -256,7 +266,7 @@ const checkArgs = (task, args) => {
       default:
         fatal("Unknown argument type: " + toSet.type);
       }
-    } catch(ex){
+    } catch (ex) {
       fatal("Error while parsing value for argument '" + task.name + "' message: " + ex);
     }
   }

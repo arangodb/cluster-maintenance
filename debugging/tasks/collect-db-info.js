@@ -10,7 +10,7 @@ exports.description = "Dumps information about the database and collection.";
 exports.selfTests = ["arango", "db"];
 exports.requires = "3.3.23 - 3.5.99";
 exports.info = `
-Dumps information about the database and collection.
+Dumps information about the database and collections.
 `;
 
 const _ = require("lodash");
@@ -128,8 +128,8 @@ exports.run = function(extra, args) {
 
     for (const c of collections) {
       if (c._type === 3 && 0 < c.count()) {
-	print("analyizing edge collection '" + c._name + "'");
-	info.edges.push(analyzeEdgeCollection(c));
+        print("analyizing edge collection '" + c._name + "'");
+        info.edges.push(analyzeEdgeCollection(c));
       }
     }
 
