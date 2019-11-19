@@ -20,7 +20,7 @@ exports.run = function(extra, args) {
   const helper = require('../helper.js');
   const users = require("@arangodb/users");
   const AsciiTable = require('../3rdParty/ascii-table');
-  const outputType = helper.getValue("mode", args) || '';
+  const outputType = helper.getValue("mode", args) || 'user';
 
   let table = new AsciiTable('Permissions');
   try {
@@ -30,11 +30,15 @@ exports.run = function(extra, args) {
       let allPermissions = users.permission(user.user);
       let p = Object.keys(allPermissions);
       p.forEach(function(dbName) {
-        values.push([dbName, user.user, user.active ? "active" : "inactive", allPermissions[dbName]]);
+        if (outputType === 'user') {
+          values.push([user.user, dbName, user.active ? "active" : "inactive", allPermissions[dbName]]);
+        } else {
+          values.push([dbName, user.user, user.active ? "active" : "inactive", allPermissions[dbName]]);
+        }
       });
     });
 
-    if (outputType === '' || outputType === 'user') {
+    if (outputType === 'user') {
       values.sort(function(l, r) {
         if (l[0] !== r[0]) {
           if (l[0] === 'root') {
@@ -76,6 +80,8 @@ exports.run = function(extra, args) {
         return 0;
       });
       table.setHeading('database', 'user', 'active', 'database', 'permissions');
+    } else {
+      throw "unknown mode '" + outputType + "'. expecting 'user' or 'db'"; 
     }
 
     values.forEach(function(row) {
@@ -83,6 +89,6 @@ exports.run = function(extra, args) {
     });
     print(table.toString());
   } catch (ex) {
-    helper.fatal("cannot get information: " + ex)
+    helper.fatal(ex)
   }
 };
