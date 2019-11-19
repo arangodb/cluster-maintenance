@@ -31,7 +31,7 @@ exports.run = function(extra, args) {
       let p = Object.keys(allPermissions);
       p.forEach(function(dbName) {
         if (outputType === 'user') {
-          values.push([user.user, dbName, user.active ? "active" : "inactive", allPermissions[dbName]]);
+          values.push([user.user, user.active ? "active" : "inactive", dbName, allPermissions[dbName]]);
         } else {
           values.push([dbName, user.user, user.active ? "active" : "inactive", allPermissions[dbName]]);
         }
