@@ -27,13 +27,28 @@ exports.run = function(extra, args) {
     let allUsers = users.all();
     let values = [];
     allUsers.forEach(function(user) {
-      let allPermissions = users.permission(user.user);
+      let allPermissions = users.permissionFull(user.user);
       let p = Object.keys(allPermissions);
       p.forEach(function(dbName) {
         if (outputType === 'user') {
-          values.push([user.user, user.active ? "active" : "inactive", dbName, allPermissions[dbName]]);
+          values.push([user.user, user.active ? "active" : "inactive", dbName, "", allPermissions[dbName].permission]);
         } else {
-          values.push([dbName, user.user, user.active ? "active" : "inactive", allPermissions[dbName]]);
+          values.push([dbName, user.user, user.active ? "active" : "inactive", "", allPermissions[dbName].permission]);
+        }
+
+        let collections = allPermissions[dbName].collections;
+        if (collections !== undefined) {
+          Object.keys(collections).forEach(function(collectionName) {
+            let perm = collections[collectionName];
+            if (collections[collectionName] === "undefined") {
+              perm = "(inherited)";
+            }
+            if (outputType === 'user') {
+              values.push([user.user, user.active ? "active" : "inactive", dbName, collectionName, perm]);
+            } else {
+              values.push([dbName, user.user, user.active ? "active" : "inactive", collectionName, perm]);
+            }
+          });
         }
       });
     });
@@ -48,20 +63,33 @@ exports.run = function(extra, args) {
           }
           return (l[0] < r[0]) ? -1 : 1;
         }
-        if (l[1] !== r[1]) {
-          if (l[1] === '_system') {
+        if (l[2] !== r[2]) {
+          if (l[2] === '*') {
             return -1;
-          } else if (r[1] === '_system') {
+          } else if (r[2] === '*') {
             return 1;
           }
-          return (l[1] < r[1]) ? -1 : 1;
+          if (l[2] === '_system') {
+            return -1;
+          } else if (r[2] === '_system') {
+            return 1;
+          }
+          return (l[2] < r[2]) ? -1 : 1;
+        }
+        if (l[3] !== r[3]) {
+          return (l[3] < r[3]) ? -1 : 1;
         }
         return 0;
       });
-      table.setHeading('user', 'active', 'database', 'permissions');
+      table.setHeading('user', 'active', 'database', 'collection', 'permissions');
     } else if (outputType === 'db') {
       values.sort(function(l, r) {
         if (l[0] !== r[0]) {
+          if (l[0] === '*') {
+            return -1;
+          } else if (r[0] === '*') {
+            return 1;
+          }
           if (l[0] === '_system') {
             return -1;
           } else if (r[0] === '_system') {
@@ -77,9 +105,12 @@ exports.run = function(extra, args) {
           }
           return (l[1] < r[1]) ? -1 : 1;
         }
+        if (l[3] !== r[3]) {
+          return (l[3] < r[3]) ? -1 : 1;
+        }
         return 0;
       });
-      table.setHeading('database', 'user', 'active', 'database', 'permissions');
+      table.setHeading('database', 'user', 'active', 'database', 'collection', 'permissions');
     } else {
       throw "unknown mode '" + outputType + "'. expecting 'user' or 'db'"; 
     }
