@@ -30,17 +30,21 @@ exports.run = function(extra, args) {
       let allPermissions = users.permissionFull(user.user);
       let p = Object.keys(allPermissions);
       p.forEach(function(dbName) {
+        let perm = allPermissions[dbName].permission;
+        if (perm === "undefined") {
+          perm = "(inherited)";
+        }
         if (outputType === 'user') {
-          values.push([user.user, user.active ? "active" : "inactive", dbName, "", allPermissions[dbName].permission]);
+          values.push([user.user, user.active ? "active" : "inactive", dbName, "", perm]);
         } else {
-          values.push([dbName, user.user, user.active ? "active" : "inactive", "", allPermissions[dbName].permission]);
+          values.push([dbName, user.user, user.active ? "active" : "inactive", "", perm]);
         }
 
         let collections = allPermissions[dbName].collections;
         if (collections !== undefined) {
           Object.keys(collections).forEach(function(collectionName) {
             let perm = collections[collectionName];
-            if (collections[collectionName] === "undefined") {
+            if (perm === "undefined") {
               perm = "(inherited)";
             }
             if (outputType === 'user') {
