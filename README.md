@@ -51,6 +51,7 @@ General Usage: ./debugging/index.js <taskname> [parameters]
 
 analyze tasks:
   analyze                              3.3.23 - 3.5.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
+  show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
 
 cleanup tasks:
   create-missing-collections           3.3.23 - 3.5.99    Adds missing collections found by the analyze task.
