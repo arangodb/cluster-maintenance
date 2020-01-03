@@ -54,6 +54,7 @@ analyze tasks:
   show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
 
 cleanup tasks:
+  clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
   create-missing-collections           3.3.23 - 3.5.99    Adds missing collections found by the analyze task.
   create-missing-system-collections    3.3.23 - 3.5.99    Adds missing system collections for all databases (does not require the analyze task).
   remove-dead-primaries                3.3.23 - 3.5.99    Removes dead primaries found by analyze task.
