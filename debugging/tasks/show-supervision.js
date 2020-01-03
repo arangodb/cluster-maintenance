@@ -22,7 +22,7 @@ exports.run = function(extra, args) {
   const dump = helper.getAgencyDumpFromObjectOrAgency(undefined);
   const state = dump.arango.Supervision.State;
   const maintenance = dump.arango.Supervision.Maintenance;
-  const create = dump.arango.Target.HotBackup.Create;
+  const create = dump.arango.Target && dump.arango.Target.HotBackup && dump.arango.Target.HotBackup.Create;
 
   if (state.Mode === "Normal") {
     if (maintenance || create) {
