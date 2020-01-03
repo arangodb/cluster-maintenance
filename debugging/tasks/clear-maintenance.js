@@ -29,28 +29,25 @@ exports.run = function(extra, args) {
   }
 
   const data = [[]];
+  const obj = {};
 
   if (maintenance) {
     const k = '/arango/Supervision/Maintenance';
     print("INFO: " + k + " is set to " + JSON.stringify(maintenance));
     print("INFO: clearing " + k);
-    const obj = {};
     obj[k] = { "op": "delete" };
-    data[0].push(obj);
   }
 
   if (create) {
     const k = '/arango/Target/HotBackup/Create';
     print("INFO: " + k + " is set to " + JSON.stringify(create));
     print("INFO: clearing " + k);
-    const obj = {};
     obj[k] = { "op": "delete" };
-    data[0].push(obj);
   }
 
-  if (data[0].length === 0) {
-    print("INFO: nothing to do");
-  } else {
+  data[0].push(obj);
+
+  if (maintenance || create) {
     const res = helper.httpWrapper('POST','/_api/agency/write', data);
 
     if (res.results[0] === 0) {
@@ -58,5 +55,7 @@ exports.run = function(extra, args) {
     } else {
       print("INFO: " + JSON.stringify(res));
     }
+  } else {
+    print("INFO: nothing to do");
   }
 };
