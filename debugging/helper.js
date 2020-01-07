@@ -108,7 +108,8 @@ const checkLeader = () => {
   } else if (response.error) {
     fatal("Got error while checking for leader agency: " + response.errorMessage);
   }
-  return response;
+  const stores = httpWrapper('GET', '/_api/agency/stores');
+  return [response, stores];
 };
 // roles - end ////////////////////////////////////////////////////////////////
 
@@ -146,11 +147,13 @@ const getAgencyDumpFromObject = (content) => {
 
 const getAgencyDumpFromObjectOrAgency = (obj = undefined) => {
   let agency = getAgencyDumpFromObject(obj);
+  let stores;
   if(agency === undefined) {
     const response = checkLeader();
-    agency = response[0];
+    agency = response[0][0];
+    stores = response[1];
   }
-  return agency;
+  return [agency,stores];
 };
 // agency dumps - end /////////////////////////////////////////////////////////
 
