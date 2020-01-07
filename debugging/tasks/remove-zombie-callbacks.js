@@ -21,7 +21,6 @@ exports.run = function(extra, args) {
   let data = [];
 
   Array.prototype.forEach.call(zombies, zombie => {
-    console.error(zombie);
     let trx = {};
     trx[Object.values(zombie)[0]] = {"op": "unobserve", "url":Object.keys(zombie)[0]};
     data.push([trx]);
