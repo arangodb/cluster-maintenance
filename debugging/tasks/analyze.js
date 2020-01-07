@@ -2,8 +2,8 @@
 /*global ARGUMENTS, print, arango */
 exports.name = "analyze";
 exports.group= "analyze tasks";
-exports.args = [ 
-  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" } 
+exports.args = [
+  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" }
 ];
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Performs health analysis on your cluster and produces input files for other cleanup tasks.";
@@ -26,11 +26,51 @@ exports.run = function(extra, args) {
   const printBad = helper.printBad;
 
   const parsedFile = helper.getValue("agency-dump", args);
-  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  let response = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  let dump = response[0];
+  let stores = response[1];
+
+  let extractFailed = function (info, dump) {
+    let failedInstanceEndpoints = [];
+    const health = dump.arango.Supervision.Health;
+    _.each(health, function (server, key) {
+      if (server.Status === 'FAILED') {
+        let endpoint = "";
+        if (server.Endpoint.startsWith("ssl")) {
+          endpoint = server.Endpoint.replace("ssl:", "https:");
+        } else {
+          endpoint = server.Endpoint.replace("tcp:", "http:");
+        }
+        failedInstanceEndpoints.push(endpoint);
+      }
+    });
+    info.failedInstances = failedInstanceEndpoints;
+  }
+
+  let saveZombieCallbacks = function (info) {
+    let zombieCallbacks = [];
+    if (info.failedInstances.length > 0 && info.callbacks !== undefined) {
+      Array.prototype.forEach.call(info.callbacks, callback => {
+        let url = Object.keys(callback)[0];
+        let fs  = url.indexOf("/");
+        let end = url.indexOf("/", fs+2);
+        if (info.failedInstances.includes(url.slice(0,end))) {
+          zombieCallbacks.push(callback);
+        }
+      });
+    }
+    if (zombieCallbacks.length > 0) {
+      fs.write("zombie-callbacks.json", JSON.stringify(zombieCallbacks));
+      print(" To remedy the zombies callback issue please run the task `remove-zombie-callbacks` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombie-callbacks.js ${fs.makeAbsolute('zombie-callbacks.json')}`);
+      print();
+    }
+  };
 
   let extractPrimaries = function (info, dump) {
     let primariesAll = {};
     let primaries = {};
+    let instancesFailed = {};
 
     const health = dump.arango.Supervision.Health;
 
@@ -54,7 +94,7 @@ exports.run = function(extra, args) {
 
     const health = dump.arango.Supervision.Health;
     var zombies = [];
-    
+
     _.each(Object.keys(currentCoords), function (id) {
       if (!plannedCoords.hasOwnProperty(id)) {
         zombies.push(id);
@@ -67,7 +107,7 @@ exports.run = function(extra, args) {
     } else {
       return false;
     }
-    
+
   };
 
   let printPrimaries = function (info) {
@@ -103,9 +143,6 @@ exports.run = function(extra, args) {
     }
   };
 
-
-
-  
   let setGlobalShard = function (info, shard) {
     let dbServer = shard.dbServer;
     let isLeader = shard.isLeader;
@@ -899,7 +936,12 @@ exports.run = function(extra, args) {
 
   const info = {};
 
+  if (stores !== undefined) {
+    info.callbacks = stores.read_db[2];
+  }
+
   // extract info
+  extractFailed(info, dump);
   extractPrimaries(info, dump);
   extractDatabases(info, dump);
   zombieCoordinators(info, dump);
@@ -948,4 +990,7 @@ exports.run = function(extra, args) {
   } else {
     printGood('Did not detect any issues in your cluster');
   }
+
+  saveZombieCallbacks(info, stores);
+
 };
