@@ -146,7 +146,6 @@ exports.run = function(extra, args) {
     }
   };
 
->>>>>>> 88083ef56f5d58281e2dc96ecf62e72f989f61da
   const recursiveMapPrinter = (map) => {
     if (map instanceof Map) {
       const res = {};
