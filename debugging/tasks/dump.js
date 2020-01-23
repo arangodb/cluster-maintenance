@@ -20,7 +20,7 @@ exports.run = function(extra, args) {
 
   try {
     let file = helper.getValue("output-file", args);
-    let dump = helper.getAgencyDumpFromObjectOrAgency(undefined);
+    let dump = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
     fs.write(file, JSON.stringify([ dump ]));
     helper.printGood("wrote agency dump to: " + file)
   } catch (ex) {
