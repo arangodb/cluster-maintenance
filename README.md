@@ -46,8 +46,8 @@ task. For this instruction, we will always use the short version of the command.
 » ./debugging/index.js help
 Please specify a password: 
 
-General Usage: /Users/hkernbach/Git/debug-scripts/debugging/index.js <taskname> [parameters]
-   Help Usage: /Users/hkernbach/Git/debug-scripts/debugging/index.js help <taskname>
+General Usage: ./debugging/index.js <taskname> [parameters]
+   Help Usage: ./debugging/index.js help <taskname>
 
 Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
   post-agency-plan                     3.3.23 - 3.5.99    Posts an agency dump to an ArangoDB agency leader.
