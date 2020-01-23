@@ -8,7 +8,7 @@ exports.args = [
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Creates analysis for a plan to rebalance shards in your cluster.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 This task creates operations that can be applied to rebalance shards in a
 cluster that has become inbalanced due to server failures.
