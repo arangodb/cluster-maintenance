@@ -46,29 +46,41 @@ task. For this instruction, we will always use the short version of the command.
 » ./debugging/index.js help
 Please specify a password: 
 
-General Usage: ./debugging/index.js <taskname> [parameters]
-   Help Usage: ./debugging/index.js help <taskname>
+General Usage: /Users/hkernbach/Git/debug-scripts/debugging/index.js <taskname> [parameters]
+   Help Usage: /Users/hkernbach/Git/debug-scripts/debugging/index.js help <taskname>
+
+Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
+  post-agency-plan                     3.3.23 - 3.5.99    Posts an agency dump to an ArangoDB agency leader.
+
+analyse move shard tasks:
+  create-move-analysis                 3.3.23 - 3.5.99    Creates analysis for a plan to rebalance shards in your cluster.
 
 analyze tasks:
   analyze                              3.3.23 - 3.5.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
-  show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
+  show-supervision                     3.3.23 - 3.6.99    Checks the state of the supervision
 
 cleanup tasks:
-  clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
+  clear-maintenance                    3.3.23 - 3.6.99    Checks the state of the supervision
   create-missing-collections           3.3.23 - 3.5.99    Adds missing collections found by the analyze task.
   create-missing-system-collections    3.3.23 - 3.5.99    Adds missing system collections for all databases (does not require the analyze task).
+  remove-cleaned-failovers             3.3.23 - 3.5.99    Clears cleaned failover candidates found by analyze task.
   remove-dead-primaries                3.3.23 - 3.5.99    Removes dead primaries found by analyze task.
   remove-skeleton-databases            3.3.23 - 3.5.99    Removes skeleton databases found by analyze task.
+  remove-zombie-callbacks              3.3.23 - 3.5.99    Removes zombie callbacks found by analyze task.
+  remove-zombie-coordinators           3.3.23 - 3.5.99    Removes dead coordinators found by analyze task.
   remove-zombies                       3.3.23 - 3.5.99    Removes zombie collections found by analyze task.
 
 move shard tasks:
   create-move-plan                     3.3.23 - 3.5.99    Creates plan to rebalance shards in your cluster.
   execute-move-plan                    3.3.23 - 3.5.99    Executes plan created by create-move-plan task.
+  force-failover                       3.3.23 - 3.5.99    Performs forced failover as calculated by analyze task.
   show-move-shards                     3.3.23 - 3.5.99    Allows to inspect shards being moved.
 
 standalone tasks:
+  collect-db-info                      3.3.23 - 3.5.99    Dumps information about the database and collection.
   dump                                 3.3.23 - 3.5.99    Dumps the agency.
   help                                 3.3.23 - 4.0.0     Shows this help.
+  users-permissions                    3.3.23 - 3.5.99    Extracts all users and permissions from the system database.
 ```
 
 Please note that only those tasks are shown that are supported by the version of
