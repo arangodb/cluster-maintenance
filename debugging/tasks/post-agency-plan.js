@@ -23,7 +23,7 @@ exports.run = function (extra, args) {
 
   // variables
   const file = helper.getValue("dump-file", args);
-  const dump = helper.getAgencyDumpFromObjectOrAgency(file);
+  const dump = helper.getAgencyDumpFromObjectOrAgency(file)[0];
   const agencyPlan = dump.arango.Plan;
   const health = dump.arango.Supervision.Health;
 
@@ -41,7 +41,7 @@ exports.run = function (extra, args) {
   };
 
   let oldDBServernames = getNamesOfCurrentDatabaseServers('PRMR');
-  let x = helper.getAgencyDumpFromObjectOrAgency(undefined);
+  let x = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
 
   let newDBServerNames = [];
   _.each(x.arango.Plan.DBServers,function (content, name) {
