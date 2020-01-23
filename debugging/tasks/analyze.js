@@ -2,8 +2,8 @@
 /*global ARGUMENTS, print, arango */
 exports.name = "analyze";
 exports.group= "analyze tasks";
-exports.args = [ 
-  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" } 
+exports.args = [
+  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" }
 ];
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Performs health analysis on your cluster and produces input files for other cleanup tasks.";
@@ -18,7 +18,7 @@ primaries or creation of missing system collections.
 exports.run = function(extra, args) {
   // imports
   const fs = require('fs');
-  const _ = require('underscore');
+  const _ = require('lodash');
   const AsciiTable = require('../3rdParty/ascii-table');
   const helper = require('../helper.js');
 
@@ -26,7 +26,69 @@ exports.run = function(extra, args) {
   const printBad = helper.printBad;
 
   const parsedFile = helper.getValue("agency-dump", args);
-  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  let response = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  let dump = response[0];
+  let stores = response[1];
+
+  let extractFailed = function (info, dump) {
+    let failedInstanceEndpoints = [];
+    const health = dump.arango.Supervision.Health;
+    _.each(health, function (server, key) {
+      if (server.Status === 'FAILED') {
+        let endpoint = "";
+        if (server.Endpoint.startsWith("ssl")) {
+          endpoint = server.Endpoint.replace("ssl:", "https:");
+        } else {
+          endpoint = server.Endpoint.replace("tcp:", "http:");
+        }
+        failedInstanceEndpoints.push(endpoint);
+      }
+    });
+    info.failedInstances = failedInstanceEndpoints;
+  }
+
+  let saveZombieCallbacks = function (info) {
+    let zombieCallbacks = [];
+    if (info.failedInstances.length > 0 && info.callbacks !== undefined) {
+      Array.prototype.forEach.call(info.callbacks, callback => {
+        let url = Object.keys(callback)[0];
+        let fs  = url.indexOf("/");
+        let end = url.indexOf("/", fs+2);
+        if (info.failedInstances.includes(url.slice(0,end))) {
+          zombieCallbacks.push(callback);
+        }
+      });
+    }
+    if (zombieCallbacks.length > 0) {
+      fs.write("zombie-callbacks.json", JSON.stringify(zombieCallbacks));
+      print(" To remedy the zombies callback issue please run the task `remove-zombie-callbacks` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombie-callbacks.js ${fs.makeAbsolute('zombie-callbacks.json')}`);
+      print();
+    }
+  };
+
+
+  let zombieCoordinators = function (info, dump) {
+    let plannedCoords = dump.arango.Plan.Coordinators;
+    let currentCoords = dump.arango.Current.Coordinators;
+
+    const health = dump.arango.Supervision.Health;
+    var zombies = [];
+
+    _.each(Object.keys(currentCoords), function (id) {
+      if (!plannedCoords.hasOwnProperty(id)) {
+        zombies.push(id);
+      }
+    });
+
+    info.zombieCoordinators = zombies;
+    if (zombies.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
+
+  };
 
   let printPrimaries = function (info) {
     var table = new AsciiTable('Primaries');
@@ -39,6 +101,52 @@ exports.run = function(extra, args) {
     print(table.toString());
   };
 
+  let printZombieCoordinators = function (info) {
+    var haveZombies = info.zombieCoordinators.length > 0;
+    if (!haveZombies) {
+      printGood('Your cluster does not have any zombie coordinators');
+      return false;
+    } else {
+      printBad('Your cluster has zombie coordinators');
+      return true;
+    }
+  };
+
+  let printCleanedFailoverCandidates = function (info) {
+    var haveCleanedFailovers = (0 < Object.keys(info.correctFailoverCandidates).length);
+    if (!haveCleanedFailovers) {
+      printGood('Your cluster does not have any cleaned servers for failover');
+      return false;
+    } else {
+      printBad('Your cluster has cleaned servers scheduled for failover');
+      return true;
+    }
+  };
+
+  let setGlobalShard = function (info, shard) {
+    let dbServer = shard.dbServer;
+    let isLeader = shard.isLeader;
+
+    if (!info.shardsPrimary[dbServer]) {
+      info.shardsPrimary[dbServer] = {
+        leaders: [],
+        followers: [],
+        realLeaders: []
+      };
+    }
+
+    if (isLeader) {
+      info.shardsPrimary[dbServer].leaders.push(shard);
+
+      if (shard.isReadLeader) {
+        info.shardsPrimary[dbServer].realLeaders.push(shard);
+      }
+    } else {
+      info.shardsPrimary[dbServer].followers.push(shard);
+    }
+  };
+
+>>>>>>> 88083ef56f5d58281e2dc96ecf62e72f989f61da
   const recursiveMapPrinter = (map) => {
     if (map instanceof Map) {
       const res = {};
@@ -425,6 +533,24 @@ exports.run = function(extra, args) {
     }
   };
 
+  let saveZombieCoords = function (info) {
+    if (info.zombieCoordinators.length > 0) {
+      fs.write("zombie-coordinators.json", JSON.stringify(info.zombieCoordinators));
+      print("To remedy the zombie coordinators issue please run the task `remove-zombie-coordinators` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombie-coordinators ${fs.makeAbsolute('zombie-coordinators.json')}`);
+      print();
+    }
+  };
+
+  let saveCleanedFailoverCandidates = function (info) {
+    if (0 < Object.keys(info.correctFailoverCandidates).length) {
+      fs.write("cleaned-failovers.json", JSON.stringify(info.correctFailoverCandidates));
+      print("To remedy the cleaned out failover db servers issue please run the task `remove-cleaned-failovers` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-cleaned-failovers ${fs.makeAbsolute('cleaned-failovers.json')}`);
+      print();
+    }
+  };
+
   let printBroken = function (info) {
     if (0 < info.broken.length) {
       printBad('Your cluster has broken collections');
@@ -496,7 +622,6 @@ exports.run = function(extra, args) {
 
   let extractEmptyDatabases = function (info) {
     info.emptyDatabases = [];
-
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
       if (database.collections.length === 0 && database.shards.length === 0) {
         info.emptyDatabases.push(database);
@@ -589,6 +714,29 @@ exports.run = function(extra, args) {
     }
   };
 
+  let extractCleanedFailoverCandidates = (info, dump) => {
+    const currentCollections = dump.arango.Current.Collections;
+    const cleanedServers = dump.arango.Target.CleanedServers;
+    var fixes = {};
+    Object.keys(currentCollections).forEach(function (dbname) {
+      var database = dump.arango.Current.Collections[dbname];
+      Object.keys(database).forEach(function(colname) {
+        var collection = database[colname];
+        Object.keys(collection).forEach(function(shname) {
+          var shard = collection[shname];
+          var inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
+          var left = shard.failoverCandidates;
+          left = _.difference(left, inter);
+          if (inter.length > 0) {
+            fixes["arango/Current/Collections/"+ dbname +"/"+ colname +"/"+ shname + "/failoverCandidates"]
+              = [left, shard.failoverCandidates];
+          }
+        });
+      });
+    });
+    info.correctFailoverCandidates = fixes;
+  };
+
   let extractOutOfSyncFollowers = (info, dump) => {
     const planCollections = dump.arango.Plan.Collections;
     const currentCollections = dump.arango.Current.Collections;
@@ -665,15 +813,22 @@ exports.run = function(extra, args) {
 
   const info = {};
 
+  if (stores !== undefined) {
+    info.callbacks = stores.read_db[2];
+  }
+
   // extract info
+  extractFailed(info, dump);
   helper.extractPrimaries(info, dump);
   helper.extractDatabases(info, dump);
+  zombieCoordinators(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractDistributionGroups(info, dump);
   extractEmptyDatabases(info);
   extractMissingCollections(info);
   extractOutOfSyncFollowers(info, dump);
+  extractCleanedFailoverCandidates(info, dump);
 
   let infected = false;
 
@@ -688,15 +843,14 @@ exports.run = function(extra, args) {
   print();
 
   infected = printZombies(info) || infected;
+  infected = printZombieCoordinators(info) || infected;
+  infected = printCleanedFailoverCandidates(info) || infected
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;
   infected = printEmptyDatabases(info) || infected;
   infected = printMissingCollections(info) || infected;
   infected = printOutOfSyncFollowers(info) || infected;
-
-  print();
-
   infected = printDistributionGroups(info) || infected;
   print();
 
@@ -704,11 +858,16 @@ exports.run = function(extra, args) {
     // Save to files
     saveCollectionIntegrity(info);
     saveZombies(info);
+    saveZombieCoords(info);
     saveCurrentDatabasesDeadPrimaries(info);
     saveDistributionGroups(info);
     saveEmptyDatabases(info);
     saveMissingCollections(info);
+    saveCleanedFailoverCandidates(info);
   } else {
     printGood('Did not detect any issues in your cluster');
   }
+
+  saveZombieCallbacks(info, stores);
+
 };
