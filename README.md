@@ -52,15 +52,12 @@ General Usage: ./debugging/index.js <taskname> [parameters]
 Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
   post-agency-plan                     3.3.23 - 3.5.99    Posts an agency dump to an ArangoDB agency leader.
 
-analyse move shard tasks:
-  create-move-analysis                 3.3.23 - 3.5.99    Creates analysis for a plan to rebalance shards in your cluster.
-
 analyze tasks:
   analyze                              3.3.23 - 3.5.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
-  show-supervision                     3.3.23 - 3.6.99    Checks the state of the supervision
+  show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
 
 cleanup tasks:
-  clear-maintenance                    3.3.23 - 3.6.99    Checks the state of the supervision
+  clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
   create-missing-collections           3.3.23 - 3.5.99    Adds missing collections found by the analyze task.
   create-missing-system-collections    3.3.23 - 3.5.99    Adds missing system collections for all databases (does not require the analyze task).
   remove-cleaned-failovers             3.3.23 - 3.5.99    Clears cleaned failover candidates found by analyze task.
@@ -71,7 +68,8 @@ cleanup tasks:
   remove-zombies                       3.3.23 - 3.5.99    Removes zombie collections found by analyze task.
 
 move shard tasks:
-  create-move-plan                     3.3.23 - 3.5.99    Creates plan to rebalance shards in your cluster.
+  create-move-analysis                 3.3.23 - 3.5.99    Creates analysis for a plan to rebalance shards in your cluster.
+  create-move-plan (deprecated)        3.3.23 - 3.5.99    Creates plan to rebalance shards in your cluster.
   execute-move-plan                    3.3.23 - 3.5.99    Executes plan created by create-move-plan task.
   force-failover                       3.3.23 - 3.5.99    Performs forced failover as calculated by analyze task.
   show-move-shards                     3.3.23 - 3.5.99    Allows to inspect shards being moved.
