@@ -19,7 +19,7 @@ exports.run = function(extra, args) {
   const _ = require('underscore');
 
   // get an agency dump
-  const dump = helper.getAgencyDumpFromObjectOrAgency(undefined);
+  const dump = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
   const state = dump.arango.Supervision.State;
   const maintenance = dump.arango.Supervision.Maintenance;
   const create = dump.arango.Target && dump.arango.Target.HotBackup && dump.arango.Target.HotBackup.Create;

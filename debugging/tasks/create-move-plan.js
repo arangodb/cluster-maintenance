@@ -35,7 +35,7 @@ exports.run = function(extra, args) {
 
   // variables
   const file = helper.getValue("dump-file", args);
-  const dump = helper.getAgencyDumpFromObjectOrAgency(file);
+  const dump = helper.getAgencyDumpFromObjectOrAgency(file)[0];
   const agencyPlan = dump.arango.Plan;
   const databases = agencyPlan.Databases;
   const agencyCollections = agencyPlan.Collections;
