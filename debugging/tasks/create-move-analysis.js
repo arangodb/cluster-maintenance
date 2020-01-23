@@ -1,7 +1,7 @@
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango, db */
 exports.name = "create-move-analysis";
-exports.group = "analyse move shard tasks";
+exports.group = "move shard tasks";
 exports.args = [
   {"name": "dump-file", "optional": true, "type": "jsonfile", "description": "agency dump file"}
 ];
