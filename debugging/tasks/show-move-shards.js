@@ -8,7 +8,7 @@ exports.args = [
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Allows to inspect shards being moved.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Allows to track progress of shard movement.
 `;
