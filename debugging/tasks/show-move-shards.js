@@ -23,7 +23,7 @@ exports.run = function(extra, args) {
   // variables
   const printGood = helper.printGood;
   const parsedFile = helper.getValue("agency-dump", args);
-  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile)[0];
 
   let extractTodos = function(info, dump) {
     const target = dump.arango.Target;
