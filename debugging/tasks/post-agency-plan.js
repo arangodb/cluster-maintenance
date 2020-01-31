@@ -8,7 +8,7 @@ exports.args = [
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Posts an agency dump to an ArangoDB agency leader.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 This task takes an agency dump file, modificates it to fit to the new server and post it.
 

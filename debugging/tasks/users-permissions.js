@@ -8,7 +8,7 @@ exports.args = [
 exports.args_arangosh = "| --server.endpoint SINGLESERVER-OR-COORDINATOR";
 exports.description = "Extracts all users and permissions from the system database.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Extracts all available users and permissions from the _system database
 and prints the information.

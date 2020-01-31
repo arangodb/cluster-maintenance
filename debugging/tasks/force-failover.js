@@ -12,7 +12,7 @@ exports.args = [
 exports.args_arangosh = " --server.endpoint LEADER-AGENT";
 exports.description = "Performs forced failover as calculated by analyze task.";
 exports.selfTests = ["arango", "db", "agencyConnection"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Executes force failover as calculated by the analyze task.
 `;
