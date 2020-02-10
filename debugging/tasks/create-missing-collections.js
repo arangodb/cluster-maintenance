@@ -9,7 +9,7 @@ exports.args = [
 exports.args_arangosh = " --server.endpoint COORDINATOR";
 exports.description = "Adds missing collections found by the analyze task.";
 exports.selfTests = ["arango", "db", "coordinatorConnection"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Adds missing collections found by the analyze task.
 `;

@@ -8,7 +8,7 @@ exports.args = [
 exports.args_arangosh = " --server.endpoint SINGLESERVER-OR-COORDINATOR --server.database DATABASE";
 exports.description = "Dumps information about the database and collection.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.5.99";
+exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Dumps information about the database and collections.
 `;
