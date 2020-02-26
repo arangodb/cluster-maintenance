@@ -10,7 +10,7 @@ ArangoDB cluster and also optionally apply modifications to it.
 ## Prerequisites
 
 In order to use these scripts, a working installation of the ArangoShell (arangosh)
-is needed. The scripts currently support ArangoDB versions 3.3, 3.4 and 3.5.
+is needed. The scripts currently support ArangoDB versions 3.3, 3.4, 3.5 and 3.6.
 
 ## Installation
 
@@ -44,54 +44,54 @@ task. For this instruction, we will always use the short version of the command.
 
 ```
 » ./debugging/index.js help
-Please specify a password: 
+Please specify a password:
 
 General Usage: ./debugging/index.js <taskname> [parameters]
    Help Usage: ./debugging/index.js help <taskname>
 
 Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
-  post-agency-plan                     3.3.23 - 3.5.99    Posts an agency dump to an ArangoDB agency leader.
+  post-agency-plan                     3.3.23 - 3.6.99    Posts an agency dump to an ArangoDB agency leader.
 
 analyze tasks:
-  analyze                              3.3.23 - 3.5.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
+  analyze                              3.3.23 - 3.6.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
   show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
 
 cleanup tasks:
   clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
-  create-missing-collections           3.3.23 - 3.5.99    Adds missing collections found by the analyze task.
-  create-missing-system-collections    3.3.23 - 3.5.99    Adds missing system collections for all databases (does not require the analyze task).
-  remove-cleaned-failovers             3.3.23 - 3.5.99    Clears cleaned failover candidates found by analyze task.
-  remove-dead-primaries                3.3.23 - 3.5.99    Removes dead primaries found by analyze task.
-  remove-skeleton-databases            3.3.23 - 3.5.99    Removes skeleton databases found by analyze task.
-  remove-zombie-callbacks              3.3.23 - 3.5.99    Removes zombie callbacks found by analyze task.
-  remove-zombie-coordinators           3.3.23 - 3.5.99    Removes dead coordinators found by analyze task.
-  remove-zombies                       3.3.23 - 3.5.99    Removes zombie collections found by analyze task.
+  create-missing-collections           3.3.23 - 3.6.99    Adds missing collections found by the analyze task.
+  create-missing-system-collections    3.3.23 - 3.6.99    Adds missing system collections for all databases (does not require the analyze task).
+  remove-cleaned-failovers             3.3.23 - 3.6.99    Clears cleaned failover candidates found by analyze task.
+  remove-dead-primaries                3.3.23 - 3.6.99    Removes dead primaries found by analyze task.
+  remove-skeleton-databases            3.3.23 - 3.6.99    Removes skeleton databases found by analyze task.
+  remove-zombie-callbacks              3.3.23 - 3.6.99    Removes zombie callbacks found by analyze task.
+  remove-zombie-coordinators           3.3.23 - 3.6.99    Removes dead coordinators found by analyze task.
+  remove-zombies                       3.3.23 - 3.6.99    Removes zombie collections found by analyze task.
 
 move shard tasks:
-  create-move-analysis                 3.3.23 - 3.5.99    Creates analysis for a plan to rebalance shards in your cluster.
-  create-move-plan (deprecated)        3.3.23 - 3.5.99    Creates plan to rebalance shards in your cluster.
-  execute-move-plan                    3.3.23 - 3.5.99    Executes plan created by create-move-plan task.
-  force-failover                       3.3.23 - 3.5.99    Performs forced failover as calculated by analyze task.
-  show-move-shards                     3.3.23 - 3.5.99    Allows to inspect shards being moved.
+  create-move-analysis                 3.3.23 - 3.6.99    Creates analysis for a plan to rebalance shards in your cluster.
+  create-move-plan (deprecated)        3.3.23 - 3.6.99    Creates plan to rebalance shards in your cluster.
+  execute-move-plan                    3.3.23 - 3.6.99    Executes plan created by create-move-plan task.
+  force-failover                       3.3.23 - 3.6.99    Performs forced failover as calculated by analyze task.
+  show-move-shards                     3.3.23 - 3.6.99    Allows to inspect shards being moved.
 
 standalone tasks:
-  collect-db-info                      3.3.23 - 3.5.99    Dumps information about the database and collection.
-  dump                                 3.3.23 - 3.5.99    Dumps the agency.
+  collect-db-info                      3.3.23 - 3.6.99    Dumps information about the database and collection.
+  dump                                 3.3.23 - 3.6.99    Dumps the agency.
   help                                 3.3.23 - 4.0.0     Shows this help.
-  users-permissions                    3.3.23 - 3.5.99    Extracts all users and permissions from the system database.
+  users-permissions                    3.3.23 - 3.6.99    Extracts all users and permissions from the system database.
 ```
 
 Please note that only those tasks are shown that are supported by the version of
 ArangoDB actually in use.
 
-Please also note that the ArangoShell may ask you for a password. For getting help 
+Please also note that the ArangoShell may ask you for a password. For getting help
 on the available tasks you can simply ignore the password prompt. For invoking any of
 the "real" tasks later, please keep in mind that the tasks are executed in a regular
-ArangoShell, so it supports the options `--server.endpoint` to connect to an 
+ArangoShell, so it supports the options `--server.endpoint` to connect to an
 arbitrary server, `--server.username` to specify the database user and also
 `--server.ask-jwt-secret` for passing credentials.
 Additionally, please note that some tasks require a working connection to either
-a coordinator or the leader agent in the cluster. This connection can also be 
+a coordinator or the leader agent in the cluster. This connection can also be
 established by using ArangoShell's parameter `--server.endpoint`.
 
 If you pass a task name after `help` you will get additional information on the
@@ -99,7 +99,7 @@ task and how to invoke it, for example:
 
 ```
 » ./debugging/index.js help create-missing-system-collections
-Please specify a password: 
+Please specify a password:
 Usage for task: create-missing-system-collections
 
 create-missing-system-collections --server.endpoint COORDINATOR
@@ -115,8 +115,8 @@ has write privileges for all databases).
 ## Authentication and SSL
 
 As shown by its detailed help, the task `create-missing-system-collections` needs a
-connection to a cluster coordinator using a privileged user. To invoke it using a 
-connection to a specific endpoint and using a specific database user, use `--server.endpoint` 
+connection to a cluster coordinator using a privileged user. To invoke it using a
+connection to a specific endpoint and using a specific database user, use `--server.endpoint`
 and `--server.username`, e.g.:
 ```
 » ./debugging/index.js --server.endpoint tcp://domain:port --server.username admin create-missing-system-collections
@@ -154,7 +154,7 @@ This will use *curl* to get the dump file from an agent. You need to specify on
 agency endpoint. In case this is not the leader *curl* will follow the redirects
 which will point to the leader.
 
-You might need the JWT token: see all details on how to generate an Agency dump at 
+You might need the JWT token: see all details on how to generate an Agency dump at
 https://www.arangodb.com/docs/3.4/troubleshooting-cluster-agency-dump.html
 
 Alternatively one can run the `dump` task against the cluster's leader agent, e.g.:
