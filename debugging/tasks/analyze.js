@@ -62,7 +62,7 @@ exports.run = function(extra, args) {
     if (zombieCallbacks.length > 0) {
       fs.write("zombie-callbacks.json", JSON.stringify(zombieCallbacks));
       print(" To remedy the zombies callback issue please run the task `remove-zombie-callbacks` against the leader AGENT, e.g.:");
-      print(` ./debugging/index.js <options> remove-zombie-callbacks.js ${fs.makeAbsolute('zombie-callbacks.json')}`);
+      print(` ./debugging/index.js <options> remove-zombie-callbacks ${fs.makeAbsolute('zombie-callbacks.json')}`);
       print();
     }
   };
