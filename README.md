@@ -78,7 +78,7 @@ standalone tasks:
   collect-db-info                      3.3.23 - 3.6.99    Dumps information about the database and collection.
   dump                                 3.3.23 - 3.6.99    Dumps the agency.
   help                                 3.3.23 - 4.0.0     Shows this help.
-  users-permissions                    3.3.23 - 3.6.99    Extracts all users and permissions from the system database.
+  users-permissions                    3.3.22 - 3.6.99    Extracts all users and permissions from the system database.
 ```
 
 Please note that only those tasks are shown that are supported by the version of
