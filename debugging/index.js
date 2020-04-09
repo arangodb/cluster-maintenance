@@ -119,7 +119,7 @@
     }).filter(function(task) {
       let good = semver.satisfies(shellVersion, task.requires) || isDevel;
       if(!good){
-        print(task.name + " removing this task because of mismatching shell version (" + shellVersion + ") requires: " + task.requires);
+        print("- " + task.name + ": removing this task because of mismatching shell version (" + shellVersion + ") requires: " + task.requires);
       }
       return good;
     });
@@ -147,9 +147,11 @@
 
   let task = tasks[requestedTask];
 
-  task.selfTests.forEach(function(test) {
-    selfTests[test.name](test.args || {});
-  });
+  if (task && task.selfTests) {
+    task.selfTests.forEach(function(test) {
+      selfTests[test.name](test.args || {});
+    });
+  }
 
   let args = helper.checkArgs(task, ARGUMENTS);
   task.run({ tasks }, args);
