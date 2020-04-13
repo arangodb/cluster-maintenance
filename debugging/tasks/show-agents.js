@@ -33,35 +33,45 @@ exports.run = function (extra, args) {
 
   _.each(active, function (key) {
     let ip = pool[key];
-    arango.reconnect(ip, "_system");
-    const local = helper.getAgencyConfiguration();
 
-    table1.addRow(
-      local.configuration.id,
-      local.leaderId,
-      ip,
-      local.configuration["pool size"],
-      local.configuration["agency size"]);
+    try {
+      arango.reconnect(ip, "_system");
+      const local = helper.getAgencyConfiguration();
 
-    table2.addRow(
-      local.configuration.id,
-      local.term,
-      local.commitIndex,
-      local.lastCompactionAt,
-      local.nextCompactionAfter);
+      table1.addRow(
+        local.configuration.id,
+        local.leaderId,
+        ip,
+        local.configuration["pool size"],
+        local.configuration["agency size"]);
 
-    if (conf.configuration["agency size"] !== local.configuration["agency size"]) {
-      errors['SIZE_MISMATCH'] = "agency-size mismatch";
-    }
+      table2.addRow(
+        local.configuration.id,
+        local.term,
+        local.commitIndex,
+        local.lastCompactionAt,
+        local.nextCompactionAfter);
 
-    if (conf.configuration["pool size"] !== local.configuration["pool size"]) {
-      errors['POOL_MISMATCH'] = "pool-size mismatch";
-    }
+      if (conf.configuration["agency size"] !== local.configuration["agency size"]) {
+        errors['SIZE_MISMATCH'] = "agency-size mismatch";
+      }
 
-    if (key !== local.configuration.id) {
-      errors['ID_MISMATCH'] = "agent id mismatch '" +
-        key + " != '" + local.configuration.id +
-        " at '" + ip + "'";
+      if (conf.configuration["pool size"] !== local.configuration["pool size"]) {
+        errors['POOL_MISMATCH'] = "pool-size mismatch";
+      }
+
+      if (key !== local.configuration.id) {
+        errors['ID_MISMATCH'] = "agent id mismatch '" +
+          key + " != '" + local.configuration.id +
+          " at '" + ip + "'";
+      }
+    } catch (ex) {
+      table1.addRow(
+        key,
+        'failed to connecto to',
+        ip,
+        '-',
+        '-');
     }
   });
 
