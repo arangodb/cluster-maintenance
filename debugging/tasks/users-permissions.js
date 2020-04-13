@@ -1,9 +1,13 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "users-permissions";
-exports.group= "standalone tasks";
-exports.args = [ 
-  { "name" : "mode", "optional" : true, "type" : "string", "description" : "output mode (user = by user, db = by database)" } 
+exports.group = "standalone tasks";
+exports.args = [
+  { "name": "mode",
+    "optional": true,
+    "type": "string",
+    "description": "output mode (user = by user, db = by database)"
+  }
 ];
 exports.args_arangosh = "| --server.endpoint SINGLESERVER-OR-COORDINATOR";
 exports.description = "Extracts all users and permissions from the system database.";
@@ -14,9 +18,8 @@ Extracts all available users and permissions from the _system database
 and prints the information.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // imports
-  const fs = require('fs');
   const helper = require('../helper.js');
   const users = require("@arangodb/users");
   const AsciiTable = require('../3rdParty/ascii-table');
@@ -26,10 +29,10 @@ exports.run = function(extra, args) {
   try {
     let allUsers = users.all();
     let values = [];
-    allUsers.forEach(function(user) {
+    allUsers.forEach(function (user) {
       let allPermissions = users.permissionFull(user.user);
       let p = Object.keys(allPermissions);
-      p.forEach(function(dbName) {
+      p.forEach(function (dbName) {
         let perm = allPermissions[dbName].permission;
         if (perm === "undefined") {
           perm = "(inherited)";
@@ -42,7 +45,7 @@ exports.run = function(extra, args) {
 
         let collections = allPermissions[dbName].collections;
         if (collections !== undefined) {
-          Object.keys(collections).forEach(function(collectionName) {
+          Object.keys(collections).forEach(function (collectionName) {
             let perm = collections[collectionName];
             if (perm === "undefined") {
               perm = "(inherited)";
@@ -58,7 +61,7 @@ exports.run = function(extra, args) {
     });
 
     if (outputType === 'user') {
-      values.sort(function(l, r) {
+      values.sort(function (l, r) {
         if (l[0] !== r[0]) {
           if (l[0] === 'root') {
             return -1;
@@ -87,7 +90,7 @@ exports.run = function(extra, args) {
       });
       table.setHeading('user', 'active', 'database', 'collection', 'permissions');
     } else if (outputType === 'db') {
-      values.sort(function(l, r) {
+      values.sort(function (l, r) {
         if (l[0] !== r[0]) {
           if (l[0] === '*') {
             return -1;
@@ -116,14 +119,15 @@ exports.run = function(extra, args) {
       });
       table.setHeading('database', 'user', 'active', 'database', 'collection', 'permissions');
     } else {
-      throw "unknown mode '" + outputType + "'. expecting 'user' or 'db'"; 
+      throw Error("unknown mode '" + outputType +
+                  "'. expecting 'user' or 'db'");
     }
 
-    values.forEach(function(row) {
+    values.forEach(function (row) {
       table.addRow(row);
     });
     print(table.toString());
   } catch (ex) {
-    helper.fatal(ex)
+    helper.fatal(ex);
   }
 };
