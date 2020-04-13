@@ -5,7 +5,7 @@ exports.group = "analyze tasks";
 exports.args = [];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Show number of documents.";
-exports.selfTests = ["arango", "db"];
+exports.selfTests = ["arango", "db", "agencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Show the number of documents in all collections in all databases.
@@ -106,9 +106,6 @@ exports.run = function (extra, args) {
 
           countServers[0] += count;
           countServers[serverCount[name]] += count;
-
-          print(dbname, cname, sname, name, count);
-          print(countServers);
         });
 
         rows2.push(_.concat([dbname, cname, sname], countServers));
@@ -132,7 +129,6 @@ exports.run = function (extra, args) {
   });
 
   print();
-  print(header);
   print(table1.toString());
   print();
 };
