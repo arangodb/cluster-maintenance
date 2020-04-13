@@ -1,9 +1,8 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "show-supervision";
-exports.group= "analyze tasks";
+exports.group = "analyze tasks";
 exports.args = [];
-
 exports.args_arangosh = " --server.endpoint LEADER-AGENT";
 exports.description = "Show the state of the supervision.";
 exports.selfTests = ["arango", "db", "agencyConnection"];
@@ -12,11 +11,8 @@ exports.info = `
 Checks the state of the supervision.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   const helper = require('../helper.js');
-
-  // imports
-  const _ = require('underscore');
 
   // get an agency dump
   const dump = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
