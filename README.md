@@ -130,6 +130,21 @@ In order to make use of JWT tokens please add `--server.ask-jwt-secret` to the c
 You can get your JWT in a kubernetes cluster with a command similar to the following:
 `kubectl get secrets nameofyourdep-jwt -o json | jq -r '.data.token' | base64 -D`
 
+## Leader agent
+
+When connecting to the agency, you need to connect to the leader agent most of the
+time.
+
+If you specify the flag `--find-leader` the debug scripts automatically try to connect
+to the leader agent. Note that this can fail, if a leader change happens just that moment
+or if the hostname is not reachable from the outside world where the scripts are running.
+
+Also note that is necessary to put a `--` in front of the task name.
+
+```
+» ./debugging/index.js --server.endpoint tcp://domain:port -- show-supervision --find-leader
+```
+
 ## Known Issues
 
 Please heed warnings about undetermined server roles in older versions, namely in the
