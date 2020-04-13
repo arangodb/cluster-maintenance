@@ -1,0 +1,20 @@
+{
+  "name": "debug-script",
+  "version": "0.0.0",
+  "description": "debug scripts for ArangoDB",
+  "author": "ArangoDB Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "eslint": "^5.2.0",
+    "eslint-config-semistandard": "^12.0.1",
+    "eslint-config-standard": "^12.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^7.0.1",
+    "eslint-plugin-promise": "^4.0.1",
+    "eslint-plugin-standard": "^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/arangodb/debug-scripts.git"
+  }
+}
