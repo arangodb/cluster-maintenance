@@ -59,20 +59,12 @@ analyze tasks:
 cleanup tasks:
   clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
   create-missing-collections           3.3.23 - 3.6.99    Adds missing collections found by the analyze task.
-  create-missing-system-collections    3.3.23 - 3.6.99    Adds missing system collections for all databases (does not require the analyze task).
-  remove-cleaned-failovers             3.3.23 - 3.6.99    Clears cleaned failover candidates found by analyze task.
-  remove-dead-primaries                3.3.23 - 3.6.99    Removes dead primaries found by analyze task.
-  remove-skeleton-databases            3.3.23 - 3.6.99    Removes skeleton databases found by analyze task.
-  remove-zombie-callbacks              3.3.23 - 3.6.99    Removes zombie callbacks found by analyze task.
-  remove-zombie-coordinators           3.3.23 - 3.6.99    Removes dead coordinators found by analyze task.
-  remove-zombies                       3.3.23 - 3.6.99    Removes zombie collections found by analyze task.
+  ...
 
 move shard tasks:
   create-move-analysis                 3.3.23 - 3.6.99    Creates analysis for a plan to rebalance shards in your cluster.
   create-move-plan (deprecated)        3.3.23 - 3.6.99    Creates plan to rebalance shards in your cluster.
-  execute-move-plan                    3.3.23 - 3.6.99    Executes plan created by create-move-plan task.
-  force-failover                       3.3.23 - 3.6.99    Performs forced failover as calculated by analyze task.
-  show-move-shards                     3.3.23 - 3.6.99    Allows to inspect shards being moved.
+  ...
 
 standalone tasks:
   collect-db-info                      3.3.23 - 3.6.99    Dumps information about the database and collection.
