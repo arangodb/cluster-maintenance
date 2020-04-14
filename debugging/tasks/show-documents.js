@@ -2,7 +2,20 @@
 /* global print, arango, db */
 exports.name = "show-documents";
 exports.group = "analyze tasks";
-exports.args = [];
+exports.args = [
+  {
+    "name": "level",
+    "optional": false,
+    "type": "string",
+    "description": "'collection' or 'database'"
+  },
+  {
+    "name": "type",
+    "optional": false,
+    "type": "string",
+    "description": "'count', 'indexes', 'size', 'total'"
+  }
+];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Show number of documents.";
 exports.selfTests = ["arango", "db", "agencyConnection"];
@@ -13,6 +26,27 @@ Show the number of documents in all collections in all databases.
 
 exports.run = function (extra, args) {
   const helper = require('../helper.js');
+
+  // at what level shall we disply the information
+  let level = helper.getValue("level", args);
+
+  if (level === "collection" || level === "col") {
+    level = "col";
+  } else if (level === "database" || level === "db") {
+    level = "db";
+  } else {
+    helper.fatal("argument 'level', expecting either 'collection' or 'database', got '" +
+                 level + "'");
+  }
+
+  // at what level shall we disply the information
+  const type = helper.getValue("type", args);
+
+  if (type !== 'count' && type !== 'size' &&
+      type !== 'indexes' && type !== 'total') {
+    helper.fatal("argument 'type', expecting either 'count', 'indexes', 'size', 'total' got '" +
+                 type + "'");
+  }
 
   // imports
   const _ = require('lodash');
@@ -48,7 +82,7 @@ exports.run = function (extra, args) {
 
           if (!serverMap.hasOwnProperty(server)) {
             serverMap[server] = [];
-            serverCount[server] = ++scount;
+            serverCount[server] = { num: ++scount, ip: ip };
           }
 
           serverMap[server].push(sinfo);
@@ -59,6 +93,17 @@ exports.run = function (extra, args) {
 
   scount++;
 
+  const table2 = new AsciiTable('Leader and Follower');
+  table2.setHeading('ID', 'Short', 'Address');
+
+  _.each(serverCount, function (val, id) {
+    table2.addRow(id, 'DB' + val.num, val.ip);
+  });
+
+  print();
+  print(table2.toString());
+  print();
+
   _.each(serverMap, function (val, id) {
     const ip = val[0].ip;
     arango.reconnect(ip, "_system");
@@ -66,20 +111,31 @@ exports.run = function (extra, args) {
     _.each(val, function (entry) {
       db._useDatabase(entry.dbname);
       const collection = db._collection(entry.shard);
-      const count = collection.count();
 
-      entry.count = count;
+      if (type === 'count') {
+        const count = collection.count();
+        entry.count = count;
+      } else if (type === 'size') {
+        const count = collection.figures().documentsSize;
+        entry.count = count;
+      } else if (type === 'indexes') {
+        const count = collection.figures().indexes.size;
+        entry.count = count;
+      } else if (type === 'total') {
+        const count = collection.figures().documentsSize + collection.figures().indexes.size;
+        entry.count = count;
+      }
     });
   });
 
   const keys = _.sortBy(_.keys(info));
 
   const table1 = new AsciiTable('Leader and Follower');
-  const header = ['database', 'collection', 'shard', 'count'];
+  const header = ['database', 'collection', 'shard', type];
   const offset = header.length;
 
-  _.each(serverCount, function (pos, name) {
-    header[offset + pos - 1] = name;
+  _.each(serverCount, function (val, id) {
+    header[offset + val.num - 1] = 'DB' + val.num;
   });
 
   table1.setHeading(header);
@@ -105,7 +161,7 @@ exports.run = function (extra, args) {
           const count = server.count;
 
           countServers[0] += count;
-          countServers[serverCount[name]] += count;
+          countServers[serverCount[name].num] += count;
         });
 
         rows2.push(_.concat([dbname, cname, sname], countServers));
@@ -121,11 +177,13 @@ exports.run = function (extra, args) {
 
     table1.addRow(_.concat([dbname, '', ''], countDatabase));
 
-    _.each(rows1, (row) => {
-      table1.addRow(row);
-    });
+    if (level === 'col') {
+      _.each(rows1, (row) => {
+        table1.addRow(row);
+      });
 
-    table1.addRow();
+      table1.addRow();
+    }
   });
 
   print();
