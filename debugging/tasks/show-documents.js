@@ -44,8 +44,8 @@ exports.run = function (extra, args) {
 
   if (type !== 'count' && type !== 'size' &&
       type !== 'indexes' && type !== 'total') {
-    helper.fatal("argument 'type', expecting either 'count', 'indexes', 'size', 'total' got '" +
-                 type + "'");
+    helper.fatal("argument 'type', expecting either 'count', 'indexes', 'size', " +
+                 "'total' got '" + type + "'");
   }
 
   // imports
