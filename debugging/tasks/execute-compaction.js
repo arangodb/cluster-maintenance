@@ -1,7 +1,7 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "execute-compaction";
-exports.group = "analyze tasks";
+exports.group = "cleanup jobs";
 exports.args = [
   {
     "name": "server",
