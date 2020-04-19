@@ -533,7 +533,8 @@ const showServers = function (dump, agency) {
       servers[key] = {
         id: key,
         endpoint: server.Endpoint,
-        status: status
+        status: status,
+        shortName: server.ShortName
       };
     });
   }
@@ -559,11 +560,11 @@ const showServers = function (dump, agency) {
   }
 
   const table = new AsciiTable('Servers');
-  table.setHeading('ID', 'Address', 'Status');
+  table.setHeading('ID', 'Address', 'Short Name', 'Status');
 
   _.each(_.sortBy(_.keys(servers)), function (key) {
     const server = servers[key];
-    table.addRow(server.id, server.endpoint, server.status);
+    table.addRow(server.id, server.endpoint, server.shortName, server.status);
   });
 
   print();
