@@ -522,10 +522,18 @@ const showServers = function (dump, agency) {
     const health = dump.arango.Supervision.Health;
 
     _.each(health, function (server, key) {
+      let status = server.Status;
+
+      if (_.has(dump.arango.Target.FailedServers, key)) {
+        status = 'FAILED';
+      } else if (_.includes(dump.arango.Target.CleanedServers, key)) {
+        status = 'CLEANED';
+      }
+
       servers[key] = {
         id: key,
         endpoint: server.Endpoint,
-        status: server.Status
+        status: status
       };
     });
   }
@@ -542,7 +550,7 @@ const showServers = function (dump, agency) {
 
       if (key === agency.leaderId) {
         servers[key].status = 'LEADER';
-      } else if (active.includes(key)) {
+      } else if (_.includes(active, key)) {
         servers[key].status = 'FOLLOWER';
       } else {
         servers[key].status = 'POOL';
