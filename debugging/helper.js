@@ -2,6 +2,7 @@
 /* global print, arango, db */
 const fs = require('fs');
 const _ = require('lodash');
+const AsciiTable = require('./3rdParty/ascii-table');
 
 // messages ///////////////////////////////////////////////////////////////////
 const printGood = (msg) => {
@@ -30,11 +31,12 @@ const padRight = function (value, maxLength) {
 
 // connections ////////////////////////////////////////////////////////////////
 let stringify;
+
 const mustStringify = () => {
   if (stringify === undefined) {
     stringify = false;
     try {
-      let ArangoError = require('@arangodb').ArangoError;
+      const ArangoError = require('@arangodb').ArangoError;
       try {
         arango.POST('/_api/agency/read', [["/"]]);
       } catch (err) {
@@ -77,9 +79,11 @@ const getRole = () => {
 };
 
 const checkRole = (role_) => {
-  let role = getRole();
+  const role = getRole();
   if (role === undefined) {
-    print("WARNING: unable to determine server role. You can ignore this warning if the script is executed against a " + role_ + ".");
+    print("WARNING: unable to determine server role. " +
+          "You can ignore this warning if the script is executed against a " +
+          role_ + ".");
   } else if (role !== role_) {
     return false;
   }
@@ -101,9 +105,13 @@ const checkAgent = () => {
 
 const checkLeader = () => {
   if (!checkRole("AGENT")) {
-    fatal("Script needs a connection to the leader agent. Currently connected to a " + getRole() + ".");
+    fatal("Script needs a connection to the leader agent. Currently connected to a " +
+          getRole() + ".");
   }
-  const response = httpWrapper('POST_RAW', '/_api/agency/read', [["/"]]); // read agency form leader
+
+  // read agency form leader
+  const response = httpWrapper('POST_RAW', '/_api/agency/read', [["/"]]);
+
   if (response.code === 307) {
     const location = response.headers.location;
     fatal("You need to connect to the leader agent at '" +
@@ -243,8 +251,8 @@ const switchToAgencyLeader = () => {
 */
 
 const printUsage = (task) => {
-  let usageArray = task.args;
-  let itemToString = (usageObject) => {
+  const usageArray = task.args;
+  const itemToString = (usageObject) => {
     let out = "<" + usageObject.name + ">";
     if (usageObject.optional) {
       out = "[" + out + "]";
@@ -274,7 +282,7 @@ const printUsage = (task) => {
 
 const countArgs = (usageArray) => {
   return usageArray.map((x) => x.optional)
-                   .reduce((acc, optional) => { return acc + ((optional === true) ? 0 : 1); }, 0);
+    .reduce((acc, optional) => { return acc + ((optional === true) ? 0 : 1); }, 0);
 };
 
 const checkArgs = (task, args) => {
@@ -291,8 +299,8 @@ const checkArgs = (task, args) => {
   }
 
   for (let i = 0; i < proArgs; i++) {
-    let given = args[i];
-    let toSet = task.args[i];
+    const given = args[i];
+    const toSet = task.args[i];
     try {
       switch (toSet.type) {
       case 'string':
@@ -303,7 +311,7 @@ const checkArgs = (task, args) => {
         break;
       case 'boolean':
       case 'bool':
-        let v = given.toLowerCase();
+        const v = given.toLowerCase();
         if (v === 'true' || v === '1' || v === 'y') {
           toSet.value = true;
         } else {
@@ -332,7 +340,7 @@ const checkGlobalArgs = (args) => {
   let l = args.length;
 
   for (let i = 1; i < l; i++) {
-    let name = args[i];
+    const name = args[i];
     let found = 0;
 
     if (name === '--find-leader') {
@@ -359,8 +367,9 @@ const getValue = (name, args) => {
 };
 // arguments and usage - end //////////////////////////////////////////////////
 
-let extractDatabases = function (info, dump) {
-  let databases = {};
+// other helpers - begin //////////////////////////////////////////////////////
+const extractDatabases = function (info, dump) {
+  const databases = {};
 
   _.each(dump.arango.Plan.Databases, function (database, name) {
     databases[name] = _.extend({
@@ -380,10 +389,10 @@ let extractDatabases = function (info, dump) {
   info.zombies = [];
   info.broken = [];
 
-  let allCollections = dump.arango.Plan.Collections;
+  const allCollections = dump.arango.Plan.Collections;
 
   _.each(allCollections, function (collections, dbName) {
-    let database = databases[dbName];
+    const database = databases[dbName];
 
     _.each(collections, function (collection, cId) {
       if (collection.name === undefined && collection.id === undefined) {
@@ -400,8 +409,8 @@ let extractDatabases = function (info, dump) {
           data: collection
         });
       } else {
-        let full = dbName + "/" + collection.name;
-        let coll = {
+        const full = dbName + "/" + collection.name;
+        const coll = {
           name: collection.name,
           fullName: full,
           distributeShardsLike: collection.distributeShardsLike || '',
@@ -422,7 +431,7 @@ let extractDatabases = function (info, dump) {
         _.each(collection.shards, function (shard, sName) {
           coll.shards.push(shard);
 
-          let s = {
+          const s = {
             shard: sName,
             database: dbName,
             collection: collection.name
@@ -463,9 +472,9 @@ let extractDatabases = function (info, dump) {
   });
 };
 
-let extractPrimaries = function (info, dump) {
-  let primariesAll = {};
-  let primaries = {};
+const extractPrimaries = function (info, dump) {
+  const primariesAll = {};
+  const primaries = {};
 
   const health = dump.arango.Supervision.Health;
 
@@ -483,9 +492,9 @@ let extractPrimaries = function (info, dump) {
   info.primariesAll = primariesAll;
 };
 
-let setGlobalShard = function (info, shard) {
-  let dbServer = shard.dbServer;
-  let isLeader = shard.isLeader;
+const setGlobalShard = function (info, shard) {
+  const dbServer = shard.dbServer;
+  const isLeader = shard.isLeader;
 
   if (!info.shardsPrimary[dbServer]) {
     info.shardsPrimary[dbServer] = {
@@ -506,6 +515,54 @@ let setGlobalShard = function (info, shard) {
   }
 };
 
+const showServers = function (dump, agency) {
+  const health = dump.arango.Supervision.Health;
+
+  const table = new AsciiTable('Servers');
+
+  const servers = {};
+
+  _.each(health, function (server, key) {
+    servers[key] = {
+      id: key,
+      endpoint: server.Endpoint,
+      status: server.Status
+    };
+  });
+
+  if (agency) {
+    const pool = agency.configuration.pool;
+    const active = agency.configuration.active;
+
+    _.each(pool, function (endpoint, key) {
+      servers[key] = {
+        id: key,
+        endpoint: endpoint
+      };
+
+      if (key === agency.leaderId) {
+        servers[key].status = 'LEADER';
+      } else if (active.includes(key)) {
+        servers[key].status = 'FOLLOWER';
+      } else {
+        servers[key].status = 'POOL';
+      }
+    });
+  }
+
+  table.setHeading('ID', 'Address', 'Status');
+
+  _.each(_.sortBy(_.keys(servers)), function (key) {
+    const server = servers[key];
+    table.addRow(server.id, server.endpoint, server.status);
+  });
+
+  print();
+  print(table.toString());
+  print();
+};
+// other helpers - end ////////////////////////////////////////////////////////
+
 // messages
 exports.printGood = printGood;
 exports.printBad = printBad;
@@ -515,6 +572,8 @@ exports.padRight = padRight;
 // sharding information
 exports.extractPrimaries = extractPrimaries;
 exports.extractDatabases = extractDatabases;
+
+exports.showServers = showServers;
 
 // connections
 exports.httpWrapper = httpWrapper;
