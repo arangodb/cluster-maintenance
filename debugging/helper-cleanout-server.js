@@ -5,18 +5,21 @@ exports.run = function (extra, args, cleanout) {
   const internal = require('internal');
   const printBad = helper.printBad;
 
-  // at what level shall we disply the information
-  const serverId = helper.getValue("server", args);
-
-  if (serverId.substring(0, 4) !== 'PRMR') {
-    helper.fatal("expecting a database server, got '" + serverId + "'");
-  }
-
   // imports
   const _ = require('lodash');
 
   // get an agency dump
   const conf = helper.getAgencyDumpFromObjectOrAgency()[0];
+
+  // at what level shall we disply the information
+  const name = helper.getValue("server", args);
+  const { serverId, shortName } = helper.findServer(conf, name);
+
+  if (serverId.substring(0, 4) !== 'PRMR') {
+    helper.fatal("expecting a database server, got '" + name + "'");
+  }
+
+  // check the health of the server
   const health = conf.arango.Supervision.Health;
 
   if (!health.hasOwnProperty(serverId)) {
@@ -28,8 +31,6 @@ exports.run = function (extra, args, cleanout) {
   if (status !== 'GOOD') {
     helper.fatal("database server '" + serverId + "' is " + status);
   }
-
-  const shortName = health[serverId].ShortName;
 
   // show a server list
   helper.showServers(conf, helper.getAgencyConfiguration());

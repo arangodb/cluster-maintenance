@@ -515,6 +515,26 @@ const setGlobalShard = function (info, shard) {
   }
 };
 
+const findServer = function (dump, name) {
+  const health = dump.arango.Supervision.Health;
+
+  if (_.has(health, name)) {
+    return { serverId: name, shortName: health[name].ShortName };
+  }
+
+  let serverId = "";
+  let shortName = "";
+
+  _.each(health, function (server, key) {
+    if (server.ShortName === name) {
+      serverId = key;
+      shortName = name;
+    }
+  });
+
+  return { serverId, shortName };
+};
+
 const showServers = function (dump, agency) {
   const servers = {};
 
@@ -584,6 +604,7 @@ exports.extractPrimaries = extractPrimaries;
 exports.extractDatabases = extractDatabases;
 
 exports.showServers = showServers;
+exports.findServer = findServer;
 
 // connections
 exports.httpWrapper = httpWrapper;

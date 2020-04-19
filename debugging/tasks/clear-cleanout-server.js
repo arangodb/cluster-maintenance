@@ -28,7 +28,12 @@ exports.run = function (extra, args) {
   helper.showServers(dump);
 
   // clear entry in agency
-  const serverId = helper.getValue("server", args);
+  const name = helper.getValue("server", args);
+  const { serverId, shortName } = helper.findServer(dump, name);
+
+  if (!shortName) {
+    helper.fatal("Unknown server '" + name + "'");
+  }
 
   const data = [[]];
   const obj = {};
