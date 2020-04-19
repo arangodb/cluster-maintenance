@@ -16,7 +16,7 @@ exports.run = function (extra, args) {
   const printBad = helper.printBad;
 
   // imports
-  const _ = require('underscore');
+  const _ = require('lodash');
   const AsciiTable = require('../3rdParty/ascii-table');
 
   // get an agency dump
