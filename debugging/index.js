@@ -57,6 +57,10 @@
 
       helper.checkLeader();
     },
+    leaderAgencyConnection: function (args, options) {
+      helper.switchToAgencyLeader();
+      helper.checkLeader();
+    },
     coordinatorConnection: function (args) {
       helper.checkCoordinator();
     }
