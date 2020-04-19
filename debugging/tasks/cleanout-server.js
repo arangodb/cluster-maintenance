@@ -1,5 +1,5 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, arango, db */
 exports.name = "cleanout-server";
 exports.group = "move shard tasks";
 exports.args = [
@@ -21,6 +21,7 @@ This task cleans out a server and remove it from the list of DBservers.
 exports.run = function (extra, args) {
   const helper = require('../helper.js');
   const internal = require('internal');
+  const printBad = helper.printBad;
 
   // at what level shall we disply the information
   const serverId = helper.getValue("server", args);
@@ -71,29 +72,32 @@ exports.run = function (extra, args) {
   }
 
   const jobId = res.id;
-  print(res);
 
   const dblist = db._databases();
   const sleep = 10;
 
   print("INFO checking shard distribution every " + sleep + " seconds...");
 
-  res = helper.httpWrapper('GET', '/_api/cluster/agency-dump');
-  print(res);
-    
   let count;
   do {
     count = 0;
 
-    for (dbase in dblist) {
+    res = helper.httpWrapper('GET', '/_admin/cluster/queryAgencyJob?id=' + jobId);
+
+    if (res.status === 'Failed') {
+      printBad(res.job.reason);
+      helper.fatal("cannot clean out server: " + res.job.reason);
+    }
+
+    for (let dbase in dblist) {
         const sd = arango.GET("/_db/" + dblist[dbase] + "/_admin/cluster/shardDistribution");
         const collections = sd.results;
 
-        for (collection in collections) {
+        for (let collection in collections) {
           const current = collections[collection].Current;
 
-          for (shard in current) {
-            if (current[shard].leader == shortName) {
+          for (let shard in current) {
+            if (current[shard].leader === shortName) {
               ++count;
             }
           }
@@ -101,7 +105,7 @@ exports.run = function (extra, args) {
     }
 
     print("INFO shards to be moved away from node " + shortName + ": " + count);
-    if (count == 0) break;
+    if (count === 0) break;
     internal.wait(sleep);
   } while (count > 0);
 };
