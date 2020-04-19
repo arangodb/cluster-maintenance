@@ -85,8 +85,18 @@ exports.run = function (extra, args, cleanout) {
           const current = collections[collection].Current;
 
           for (let shard in current) {
-            if (current[shard].leader === shortName) {
+            const s = current[shard];
+
+            if (s.leader === shortName) {
               ++count;
+            }
+
+            if (cleanout) {
+              _.each(s.followers, function (key) {
+                if (key === shortName) {
+                  ++count;
+                }
+              });
             }
           }
         }
