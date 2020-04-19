@@ -18,7 +18,7 @@ exports.args = [
 ];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Show number of documents.";
-exports.selfTests = ["arango", "db", "agencyConnection"];
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Show the number of documents in all collections in all databases.
@@ -61,6 +61,8 @@ exports.run = function (extra, args) {
 
   const serverCount = {};
   let scount = 0;
+
+  helper.showServers(conf, helper.getAgencyConfiguration());
 
   _.each(conf.arango.Current.Collections, function (val, dbname) {
     info[dbname] = {};
