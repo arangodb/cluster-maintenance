@@ -96,4 +96,10 @@ exports.run = function (extra, args, cleanout) {
     if (count === 0) break;
     internal.wait(sleep);
   } while (count > 0);
+
+  while (res.status === 'ToDo') {
+    res = helper.httpWrapper('GET', '/_admin/cluster/queryAgencyJob?id=' + jobId);
+    print("INFO waiting for job to finished");
+    internal.wait(sleep);
+  }
 };
