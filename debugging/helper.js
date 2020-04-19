@@ -516,19 +516,19 @@ const setGlobalShard = function (info, shard) {
 };
 
 const showServers = function (dump, agency) {
-  const health = dump.arango.Supervision.Health;
-
-  const table = new AsciiTable('Servers');
-
   const servers = {};
 
-  _.each(health, function (server, key) {
-    servers[key] = {
-      id: key,
-      endpoint: server.Endpoint,
-      status: server.Status
-    };
-  });
+  if (dump) {
+    const health = dump.arango.Supervision.Health;
+
+    _.each(health, function (server, key) {
+      servers[key] = {
+        id: key,
+        endpoint: server.Endpoint,
+        status: server.Status
+      };
+    });
+  }
 
   if (agency) {
     const pool = agency.configuration.pool;
@@ -550,6 +550,7 @@ const showServers = function (dump, agency) {
     });
   }
 
+  const table = new AsciiTable('Servers');
   table.setHeading('ID', 'Address', 'Status');
 
   _.each(_.sortBy(_.keys(servers)), function (key) {

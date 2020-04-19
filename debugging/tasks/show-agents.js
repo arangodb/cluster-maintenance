@@ -5,7 +5,7 @@ exports.group = "analyze tasks";
 exports.args = [];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Show the status of the agents.";
-exports.selfTests = ["arango", "db"];
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Check the state of the agents.
@@ -24,6 +24,8 @@ exports.run = function (extra, args) {
   const pool = conf.configuration.pool;
   const active = conf.configuration.active;
   const errors = {};
+
+  helper.showServers(undefined, conf);
 
   var table1 = new AsciiTable('Agents');
   table1.setHeading('ID', 'leader', 'addr', 'pool', 'size');
