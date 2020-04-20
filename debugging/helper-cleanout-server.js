@@ -41,7 +41,7 @@ exports.run = function (extra, args, cleanout) {
   });
 
   if (!cord) {
-    helper.fatal("cannot find a health coordinator");
+    helper.fatal("cannot find a healthy coordinator");
   }
 
   arango.reconnect(cord.Endpoint, "_system");
