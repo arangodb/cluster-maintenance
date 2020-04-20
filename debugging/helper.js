@@ -515,6 +515,26 @@ const setGlobalShard = function (info, shard) {
   }
 };
 
+const findServer = function (dump, name) {
+  const health = dump.arango.Supervision.Health;
+
+  if (_.has(health, name)) {
+    return { serverId: name, shortName: health[name].ShortName };
+  }
+
+  let serverId = "";
+  let shortName = "";
+
+  _.each(health, function (server, key) {
+    if (server.ShortName === name) {
+      serverId = key;
+      shortName = name;
+    }
+  });
+
+  return { serverId, shortName };
+};
+
 const showServers = function (dump, agency) {
   const servers = {};
 
@@ -522,10 +542,19 @@ const showServers = function (dump, agency) {
     const health = dump.arango.Supervision.Health;
 
     _.each(health, function (server, key) {
+      let status = server.Status;
+
+      if (_.has(dump.arango.Target.FailedServers, key)) {
+        status = 'FAILED';
+      } else if (_.includes(dump.arango.Target.CleanedServers, key)) {
+        status = 'CLEANED';
+      }
+
       servers[key] = {
         id: key,
         endpoint: server.Endpoint,
-        status: server.Status
+        status: status,
+        shortName: server.ShortName
       };
     });
   }
@@ -542,7 +571,7 @@ const showServers = function (dump, agency) {
 
       if (key === agency.leaderId) {
         servers[key].status = 'LEADER';
-      } else if (active.includes(key)) {
+      } else if (_.includes(active, key)) {
         servers[key].status = 'FOLLOWER';
       } else {
         servers[key].status = 'POOL';
@@ -551,11 +580,11 @@ const showServers = function (dump, agency) {
   }
 
   const table = new AsciiTable('Servers');
-  table.setHeading('ID', 'Address', 'Status');
+  table.setHeading('ID', 'Address', 'Short Name', 'Status');
 
   _.each(_.sortBy(_.keys(servers)), function (key) {
     const server = servers[key];
-    table.addRow(server.id, server.endpoint, server.status);
+    table.addRow(server.id, server.endpoint, server.shortName, server.status);
   });
 
   print();
@@ -575,6 +604,7 @@ exports.extractPrimaries = extractPrimaries;
 exports.extractDatabases = extractDatabases;
 
 exports.showServers = showServers;
+exports.findServer = findServer;
 
 // connections
 exports.httpWrapper = httpWrapper;
