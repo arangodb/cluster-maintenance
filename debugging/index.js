@@ -42,12 +42,14 @@
   const selfTests = {
     arango: function (args) {
       if (arango === undefined) {
-        fatal("arango object is undefined. This should not happen. Please try invoking this script via the arangosh!");
+        fatal("arango object is undefined. This should not happen. " +
+              "Please try invoking this script via the arangosh!");
       }
     },
     db: function (args) {
       if (db === undefined) {
-        fatal("db object is undefined. This should not happen. Please try invoking this script via the arangosh!");
+        fatal("db object is undefined. This should not happen. " +
+              "Please try invoking this script via the arangosh!");
       }
     },
     agencyConnection: function (args, options) {
