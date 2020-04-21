@@ -79,12 +79,13 @@ exports.run = function (extra, args) {
           const s = health[server];
           const status = s.Status;
           const ip = s.Endpoint;
-          const sinfo = {server, status, ip, dbname, cid, cname, shard};
+          const shortName = s.ShortName;
+          const sinfo = {server, status, ip, dbname, cid, cname, shard, shortName};
           info[dbname][cname][shard].push(sinfo);
 
           if (!serverMap.hasOwnProperty(server)) {
             serverMap[server] = [];
-            serverCount[server] = { num: ++scount, ip: ip };
+            serverCount[server] = { num: ++scount, shortName, ip };
           }
 
           serverMap[server].push(sinfo);
@@ -99,7 +100,7 @@ exports.run = function (extra, args) {
   table2.setHeading('ID', 'Short', 'Address');
 
   _.each(serverCount, function (val, id) {
-    table2.addRow(id, 'DB' + val.num, val.ip);
+    table2.addRow(id, val.shortName, val.ip);
   });
 
   print();
@@ -137,7 +138,7 @@ exports.run = function (extra, args) {
   const offset = header.length;
 
   _.each(serverCount, function (val, id) {
-    header[offset + val.num - 1] = 'DB' + val.num;
+    header[offset + val.num - 1] = val.shortName;
   });
 
   table1.setHeading(header);
