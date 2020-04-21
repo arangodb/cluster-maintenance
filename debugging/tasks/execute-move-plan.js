@@ -1,8 +1,8 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global ARGUMENTS, print, arango, db */
+/* global print */
 exports.name = "execute-move-plan";
 exports.group = "move shard tasks";
-exports.args = [ 
+exports.args = [
   {
     "name": "move-plan-file",
     "optional": false,
@@ -24,13 +24,13 @@ Executes operations that have been calculated by the create-move-plan task.
 This operation will do the actual rebalancing of a cluster.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   const helper = require('../helper.js');
   const _ = require('underscore');
 
   let shardsToMove = helper.getValue("move-plan-file", args);
   let amount = helper.getValue("amount", args);
-  if(amount === undefined) {
+  if (amount === undefined) {
     amount = -1;
   }
 
@@ -41,7 +41,7 @@ exports.run = function(extra, args) {
     if (amount > 0 || amount === -1) {
       try {
         print("Moving shard: " + shard.shard + " from: " + shard.fromServer + " to: " + shard.toServer);
-        let res = helper.httpWrapper('POST','/_admin/cluster/moveShard', shard);
+        let res = helper.httpWrapper('POST', '/_admin/cluster/moveShard', shard);
         if (res.error) {
           print("Failed: " + res.errorNum.errorMessage);
           print(res);
