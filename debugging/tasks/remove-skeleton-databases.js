@@ -20,7 +20,7 @@ exports.run = function(extra, args) {
   const _ = require('underscore');
   const helper = require('../helper.js');
 
-  let skeletons = helper.getValue("remove-skeleton-database-file");
+  let skeletons = helper.getValue("remove-skeleton-database-file", args);
 
   _.each(skeletons, function(skeleton) {
     if (skeleton.database.length > 0) {
