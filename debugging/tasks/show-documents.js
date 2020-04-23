@@ -26,6 +26,7 @@ Show the number of documents in all collections in all databases.
 
 exports.run = function (extra, args) {
   const helper = require('../helper.js');
+  const printBad = helper.printBad;
 
   // at what level shall we disply the information
   let level = helper.getValue("level", args);
@@ -68,7 +69,27 @@ exports.run = function (extra, args) {
     info[dbname] = {};
 
     _.each(val, function (val, cid) {
-      const cname = shardMap[dbname][cid].name;
+      if (!shardMap.hasOwnProperty(dbname)) {
+        printBad("database '" + dbname + "' is in current, but not in plan");
+        return;
+      }
+
+      let d1 = shardMap[dbname];
+
+      if (!d1.hasOwnProperty(cid)) {
+        printBad("collection '" + cid + "' in database '" +
+                 dbname + "' is in current, but not in plan");
+        return;
+      }
+
+      let d2 = d1[cid];
+
+      if (!d2.hasOwnProperty('name')) {
+        printBad("collection '" + cid + "' in database '" +
+                 dbname + "' in plan has no name");
+      }
+
+      const cname = d2.name;
       info[dbname][cname] = {};
 
       _.each(val, function (val, shard) {
