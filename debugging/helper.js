@@ -146,25 +146,27 @@ const readJsonFile = (file, mustBeRead = false) => {
 // agency dumps and config ////////////////////////////////////////////////////
 const getAgencyDumpFromObject = (content) => {
   // content is a must be the parsed contnet of a json file
-  if (content === undefined) {
+  if (!content) {
     return undefined;
-  }
-  if (Array.isArray(content)) {
+  } else if (Array.isArray(content)) {
     return content[0];
+  } else if (content.hasOwnProperty(".agency") && content.hasOwnProperty("arango")) {
+    return content;
   } else {
     return content.agency;
   }
 };
 
 const getAgencyDumpFromObjectOrAgency = (obj = undefined) => {
-  let agency = getAgencyDumpFromObject(obj);
-  let stores;
-  if (agency === undefined) {
+  if (obj) {
+    let agency = getAgencyDumpFromObject(obj);
+    return [agency];
+  } else {
     const response = checkLeader();
-    agency = response[0][0];
-    stores = response[1];
+    const agency = response[0][0];
+    const stores = response[1];
+    return [agency, stores];
   }
-  return [agency, stores];
 };
 
 const getAgencyConfiguration = () => {
