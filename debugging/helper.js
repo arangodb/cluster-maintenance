@@ -110,19 +110,9 @@ const checkLeader = () => {
   }
 
   // read agency form leader
-  const response = httpWrapper('POST_RAW', '/_api/agency/read', [["/"]]);
-
-  if (response.code === 307) {
-    const location = response.headers.location;
-    fatal("You need to connect to the leader agent at '" +
-          location.substr(0, location.length - "_api/agency/read".length) +
-          "'");
-  } else if (response.error) {
-    fatal("Got error while checking for leader agency: " +
-          response.errorMessage);
-  }
+  const response = httpWrapper('POST', '/_api/agency/read', [["/"]]);
   const stores = httpWrapper('GET', '/_api/agency/stores');
-  return [response.parsedBody, stores];
+  return [response, stores];
 };
 // roles - end ////////////////////////////////////////////////////////////////
 
@@ -175,16 +165,8 @@ const getAgencyConfiguration = () => {
           "Currently connected to a " + getRole() + ".");
   }
   const url = '/_api/agency/config';
-  const response = httpWrapper('GET_RAW', url);
-  if (response.code === 307) {
-    const location = response.headers.location;
-    fatal("You need to connect to the leader agent at '" +
-          location.substr(0, location.length - url.length) + "'");
-  } else if (response.error) {
-    fatal("Got error while checking for leader agency: " +
-          response.errorMessage);
-  }
-  return response.parsedBody;
+  const response = httpWrapper('GET', url);
+  return response;
 };
 
 const switchToAgencyLeader = () => {
