@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "show-move-shards";
 exports.group = "move shard tasks";
-exports.args = [ 
-  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" } 
+exports.args = [
+  {
+    "name": "agency-dump",
+    "optional": true,
+    "type": "jsonfile",
+    "description": "agency dump"
+  }
 ];
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Allows to inspect shards being moved.";
@@ -12,20 +17,17 @@ exports.requires = "3.3.23 - 3.6.99";
 exports.info = `
 Allows to track progress of shard movement.
 `;
-
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // modules
   const helper = require('../helper.js');
-  const fs = require('fs');
   const _ = require('underscore');
   const AsciiTable = require('../3rdParty/ascii-table');
 
   // variables
-  const printGood = helper.printGood;
   const parsedFile = helper.getValue("agency-dump", args);
   let dump = helper.getAgencyDumpFromObjectOrAgency(parsedFile)[0];
 
-  let extractTodos = function(info, dump) {
+  let extractTodos = function (info, dump) {
     const target = dump.arango.Target;
 
     let joblist = {};
@@ -34,11 +36,11 @@ exports.run = function(extra, args) {
     let serverToServerPending = {};
     let serverToServerToDo = {};
 
-    _.each(target, function(jobs, key) {
+    _.each(target, function (jobs, key) {
       if (key === "ToDo" || key === "Pending" || key === "Finished" || key === "Failed") {
         let list = [];
 
-        _.each(jobs, function(job, jkey) {
+        _.each(jobs, function (job, jkey) {
           if (job.type === "moveShard") {
             list.push(job);
 
@@ -107,15 +109,15 @@ exports.run = function(extra, args) {
     info.reasons = reasons;
   };
 
-  let printDatabaseTodos = function(info) {
-    if (0 < Object.keys(info.jobsPerDatabase).length) {
-      var table = new AsciiTable('Jobs Per Database');
+  let printDatabaseTodos = function (info) {
+    if (Object.keys(info.jobsPerDatabase).length > 0) {
+      let table = new AsciiTable('Jobs Per Database');
       table.setHeading('database', 'type', 'count');
 
-      _.each(info.jobsPerDatabase, function(database, dname) {
+      _.each(info.jobsPerDatabase, function (database, dname) {
         table.addRow(dname);
 
-        _.each(database, function(jobs, name) {
+        _.each(database, function (jobs, name) {
           table.addRow('', name, jobs.length);
         });
       });
@@ -124,23 +126,23 @@ exports.run = function(extra, args) {
     }
   };
 
-  let printTodos = function(info) {
-    var table = new AsciiTable('Jobs');
+  let printTodos = function (info) {
+    let table = new AsciiTable('Jobs');
     table.setHeading('type', 'count');
 
-    _.each(info.jobs, function(jobs, name) {
+    _.each(info.jobs, function (jobs, name) {
       table.addRow(name, jobs.length);
     });
 
     print(table.toString());
   };
 
-  let printFailedReasons = function(info) {
-    if (0 < Object.keys(info.reasons).length) {
-      var table = new AsciiTable('Reasons for failure');
+  let printFailedReasons = function (info) {
+    if (Object.keys(info.reasons).length > 0) {
+      let table = new AsciiTable('Reasons for failure');
       table.setHeading('reason', 'count');
 
-      _.each(info.reasons, function(count, name) {
+      _.each(info.reasons, function (count, name) {
         table.addRow(name, count);
       });
 
@@ -148,13 +150,12 @@ exports.run = function(extra, args) {
     }
   };
 
-  let printToDoJobs = function(info) {
-    var table = new
-    AsciiTable('ToDo (planned)');
+  let printToDoJobs = function (info) {
+    let table = new AsciiTable('ToDo (planned)');
     table.setHeading('from', 'to', 'count');
 
-    _.each(info.serverToServerToDo, function(froms, to) {
-      _.each(froms, function(jobs, from) {
+    _.each(info.serverToServerToDo, function (froms, to) {
+      _.each(froms, function (jobs, from) {
         table.addRow(from, to,
           jobs.length);
       });
@@ -163,13 +164,12 @@ exports.run = function(extra, args) {
     print(table.toString());
   };
 
-  let printPendingJobs = function(info) {
-    var table = new
-    AsciiTable('Pending');
+  let printPendingJobs = function (info) {
+    let table = new AsciiTable('Pending');
     table.setHeading('from', 'to', 'count');
 
-    _.each(info.serverToServerPending, function(froms, to) {
-      _.each(froms, function(jobs, from) {
+    _.each(info.serverToServerPending, function (froms, to) {
+      _.each(froms, function (jobs, from) {
         table.addRow(from, to,
           jobs.length);
       });

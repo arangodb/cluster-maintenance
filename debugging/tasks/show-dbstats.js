@@ -36,13 +36,13 @@ exports.run = function (extra, args) {
 
           serverMap[server] = {
             server, status, ip, dbname, cid, cname, shard
-          }
+          };
         });
       });
     });
   });
 
-  _.each(serverMap, function(val, id) {
+  _.each(serverMap, function (val, id) {
     const ip = val.ip;
 
     print("================================================================================");
@@ -91,7 +91,7 @@ exports.run = function (extra, args) {
       "rocksdb.min-log-number-to-keep",
       "rocksdb.estimate-live-data-size",
       "rocksdb.live-sst-files-size"
-    ], function(key) {
+    ], function (key) {
       table.addRow(key, stats[key]);
     });
 
@@ -103,7 +103,7 @@ exports.run = function (extra, args) {
 
     const cf = stats.columnFamilies;
 
-    _.each(cf, function(stat, family) {
+    _.each(cf, function (stat, family) {
       print(stat.dbstats);
     });
 
