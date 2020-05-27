@@ -117,7 +117,7 @@ exports.run = function (extra, args) {
 
   scount++;
 
-  const table2 = new AsciiTable('Leader and Follower');
+  const table2 = new AsciiTable('Database Servers');
   table2.setHeading('ID', 'Short', 'Address');
 
   _.each(serverCount, function (val, id) {
@@ -164,6 +164,8 @@ exports.run = function (extra, args) {
 
   table1.setHeading(header);
 
+  let countTotal = (new Array(scount)).fill(0);
+
   _.each(keys, function (dbname) {
     const dbs = info[dbname];
     const keys = _.sortBy(_.keys(dbs));
@@ -200,6 +202,7 @@ exports.run = function (extra, args) {
     });
 
     table1.addRow(_.concat([dbname, '', ''], countDatabase));
+    countTotal = _.zipWith(countTotal, countDatabase, (a, b) => a + b);
 
     if (level === 'col') {
       _.each(rows1, (row) => {
@@ -209,6 +212,9 @@ exports.run = function (extra, args) {
       table1.addRow();
     }
   });
+
+  table1.addRow();
+  table1.addRow(_.concat(["TOTAL", '', ''], countTotal));
 
   print();
   print(table1.toString());

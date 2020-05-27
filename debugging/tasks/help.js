@@ -4,7 +4,7 @@ exports.name = "help";
 exports.group= "standalone tasks";
 exports.args = [ { "name" : "task-name", "optional" : true, "type": "string"} ];
 exports.description = "Shows this help.";
-exports.requires = "3.3.23 - 4.0.0";
+exports.requires = "3.3.23 - 4.99.99";
 exports.selfTests = [];
 exports.info = `
 Provides usage information and shows availabe tasks.

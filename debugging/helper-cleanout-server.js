@@ -70,6 +70,7 @@ exports.run = function (extra, args, cleanout) {
   let count;
   do {
     count = 0;
+    leaderOnly = 0;
 
     res = helper.httpWrapper('GET', '/_admin/cluster/queryAgencyJob?id=' + jobId);
 
@@ -98,13 +99,22 @@ exports.run = function (extra, args, cleanout) {
                   ++count;
                 }
               });
-            }
+            } else {
+	      if (0 == s.followers.length && s.leader === shortName) {
+		++leaderOnly;
+	      }
+	    }
           }
         }
     }
 
-    print("INFO shards to be moved away from node " + shortName + ": " + count);
-    if (count === 0) break;
+    if (cleanout) {
+      print("INFO shards to be moved away from node " + shortName + ": " + count);
+      if (count === 0) break;
+    } else {
+      print("INFO shards to be moved away from node " + shortName + ": " + count + ", leader-only: " + leaderOnly);
+      if (count === leaderOnly) break;
+    }
     internal.wait(sleep);
   } while (count > 0);
 

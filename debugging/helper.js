@@ -109,8 +109,21 @@ const checkLeader = () => {
           getRole() + ".");
   }
 
-  // read agency form leader
-  const response = httpWrapper('POST', '/_api/agency/read', [["/"]]);
+  // check for redirect
+  const url = '/_api/agency/read';
+  const redirect = httpWrapper('POST_RAW', url, [["/dummy"]]);
+
+  if (redirect.code === 307) {
+    const location = redirect.headers.location;
+    fatal("You need to connect to the leader agent at '" +
+	  location.substr(0, location.length - url.length) + "'");
+    } else if (redirect.error) {
+      fatal("Got error while checking for leader agency: " +
+      redirect.errorMessage);
+  }
+
+  // read agency from leader
+  const response = httpWrapper('POST', url, [["/"]]);
   const stores = httpWrapper('GET', '/_api/agency/stores');
   return [response, stores];
 };
@@ -152,6 +165,7 @@ const getAgencyDumpFromObjectOrAgency = (obj = undefined) => {
     let agency = getAgencyDumpFromObject(obj);
     return [agency];
   } else {
+    switchToAgencyLeader();
     const response = checkLeader();
     const agency = response[0][0];
     const stores = response[1];
@@ -169,7 +183,31 @@ const getAgencyConfiguration = () => {
   return response;
 };
 
+const findAgencyFromCoordinator = () => {
+  const response = httpWrapper('GET', '/_admin/cluster/health');
+
+  if (response.code !== 200) {
+    fatal("Cannot read '/_admin/cluster/health', got: ", JSON.stringify(response));
+  }
+
+  for (let key in response.Health) {
+    server = response.Health[key];
+
+    if (server.Role === 'Agent' && server.Status === 'GOOD') {
+      print("INFO found an agent at '" + server.Endpoint + "'");
+      arango.reconnect(server.Endpoint, "_system");
+      return;
+    }
+  }
+
+  fatal("Cannot find an healthy agent");
+};
+
 const switchToAgencyLeader = () => {
+  if (checkRole("COORDINATOR")) {
+    findAgencyFromCoordinator();
+  }
+
   if (!checkRole("AGENT")) {
     fatal("Script needs a connection to an agent. " +
           "Currently connected to a " + getRole() + ".");

@@ -12,7 +12,7 @@ exports.args = [
 ];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Run compaction on server";
-exports.selfTests = ["arango", "db", "agencyConnection"];
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Runs the compaction on all collections on one server.
@@ -49,7 +49,8 @@ exports.run = function (extra, args) {
           const s = health[server];
           const status = s.Status;
           const ip = s.Endpoint;
-          const sinfo = {server, status, ip, dbname, cid, cname, shard};
+          const shortName = s.ShortName;
+          const sinfo = {server, status, ip, dbname, cid, cname, shard, shortName};
           info[dbname][cname][shard].push(sinfo);
 
           if (!serverMap.hasOwnProperty(server)) {
@@ -63,7 +64,7 @@ exports.run = function (extra, args) {
   });
 
   _.each(serverMap, function (val, id) {
-    if (server === '*' || id === server) {
+    if (server === '*' || id === server || val[0].shortName === server) {
       const ip = val[0].ip;
       arango.reconnect(ip, "_system");
 

@@ -5,7 +5,7 @@ exports.group = "analyze tasks";
 exports.args = [];
 exports.args_arangosh = " --server.endpoint AGENT";
 exports.description = "Run compaction on server";
-exports.selfTests = ["arango", "db", "agencyConnection"];
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Runs the compaction on all collections on one server.

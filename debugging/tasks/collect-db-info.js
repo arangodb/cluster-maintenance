@@ -1,7 +1,7 @@
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango */
 exports.name = "collect-db-info";
-exports.group= "standalone tasks";
+exports.group = "analyze tasks";
 exports.args = [ 
   { "name" : "output-file", "optional" : false, "type": "string"},
 ];

@@ -6,8 +6,8 @@ exports.args = [];
 
 exports.args_arangosh = " --server.endpoint LEADER-AGENT";
 exports.description = "Clear maintenance and hot-backup flag.";
-exports.selfTests = ["arango", "db", "agencyConnection"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Checks the state of the supervision.
 `;

@@ -5,10 +5,10 @@ exports.group = "analyze tasks";
 exports.args = [];
 exports.args_arangosh = " --server.endpoint LEADER-AGENT";
 exports.description = "Show the state of the supervision.";
-exports.selfTests = ["arango", "db", "agencyConnection"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
-Checks the state of the supervision.
+  Checks the state of the supervision, maintenance and hot-backup.
 `;
 
 exports.run = function (extra, args) {
@@ -32,9 +32,13 @@ exports.run = function (extra, args) {
 
   if (maintenance) {
     print("WARNING: /arango/Supervision/Maintenance is set to " + JSON.stringify(maintenance));
+  } else {
+    print("INFO: /arango/Supervision/Maintenance is not set");
   }
 
   if (create) {
     print("WARNING: /arango/Target/HotBackup/Create is set to " + JSON.stringify(create));
+  } else {
+    print("INFO: /arango/Target/HotBackup/Create is not set");
   }
 };

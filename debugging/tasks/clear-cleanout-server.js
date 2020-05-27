@@ -11,11 +11,11 @@ exports.args = [
   }
 ];
 exports.args_arangosh = " --server.endpoint AGENT";
-exports.description = "Clear maintenance and hot-backup flag.";
+exports.description = "Clear cleanout server list";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
-exports.requires = "3.6.0 - 3.6.99";
+exports.requires = "3.6.0 - 3.7.99";
 exports.info = `
-Remove the cleanout flag.
+Remove the cleaned out servers at '/arango/Target/CleanedServers'.
 `;
 
 exports.run = function (extra, args) {
