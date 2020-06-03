@@ -233,6 +233,16 @@ const switchToAgencyLeader = () => {
           response.errorMessage);
   }
 };
+
+const getAgencyHistoryFromCoordinator = () => {
+  checkCoordinator();
+  let response = httpWrapper('GET', "/_api/cluster/agency-dump");
+  if (response.error) {
+    fatal("Got error while while gettign agency history: " +
+          response.errorMessage);
+  }
+  return response;
+};
 // agency dumps and config - end //////////////////////////////////////////////
 
 // arguments and usage ////////////////////////////////////////////////////////
@@ -642,6 +652,7 @@ exports.readJsonFile = readJsonFile;
 
 // agency dump and config
 exports.getAgencyDumpFromObjectOrAgency = getAgencyDumpFromObjectOrAgency;
+exports.getAgencyHistoryFromCoordinator = getAgencyHistoryFromCoordinator;
 exports.getAgencyConfiguration = getAgencyConfiguration;
 exports.switchToAgencyLeader = switchToAgencyLeader;
 

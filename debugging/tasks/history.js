@@ -1,16 +1,16 @@
 /*jshint globalstrict:false, strict:false, sub: true */
 /*global ARGUMENTS, print, arango */
-exports.name = "dump";
+exports.name = "history";
 exports.group= "standalone tasks";
 exports.args = [ 
   { "name" : "output-file", "optional" : false, "type": "string"},
 ];
-exports.args_arangosh = " --server.endpoint LEADER-AGENT";
-exports.description = "Get agency-dump from an agent.";
-exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
+exports.args_arangosh = " --server.endpoint COORDINATOR";
+exports.description = "Get agency-history from an agent.";
+exports.selfTests = ["arango", "db", "coordinatorConnection"];
 exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
-Get agency-dump from an agency leader.
+Get agency-history from an coordinator.
 `;
 
 exports.run = function(extra, args) {
@@ -20,10 +20,10 @@ exports.run = function(extra, args) {
 
   try {
     let file = helper.getValue("output-file", args);
-    let dump = helper.getAgencyDumpFromObjectOrAgency()[0];
-    fs.write(file, JSON.stringify([ dump ]));
-    helper.printGood("wrote agency dump to: " + file)
+    let history = helper.getAgencyHistoryFromCoordinator();
+    fs.write(file, JSON.stringify(history));
+    helper.printGood("wrote agency history to: " + file)
   } catch (ex) {
-    helper.fatal("error while getting agency dump: " + ex)
+    helper.fatal("error while getting agency history: " + ex)
   }
 };
