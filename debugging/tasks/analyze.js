@@ -5,7 +5,7 @@ exports.group= "analyze tasks";
 exports.args = [
   { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" }
 ];
-exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
+exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Performs health analysis on your cluster and produces input files for other cleanup tasks.";
 exports.selfTests = ["arango", "db"];
 exports.requires = "3.3.23 - 3.7.99";

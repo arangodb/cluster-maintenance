@@ -4,43 +4,43 @@
 
 ## Purpose
 
-A collection of several helper scripts that gather diagnostic information about an
-ArangoDB cluster and also optionally apply modifications to it.
+A collection of several helper scripts that gather diagnostic information about
+an ArangoDB cluster and also optionally apply modifications to it.
 
 ## Prerequisites
 
-In order to use these scripts, a working installation of the ArangoShell (arangosh)
-is needed. The scripts currently support ArangoDB versions 3.3, 3.4, 3.5 and 3.6.
+In order to use these scripts, a working installation of the ArangoShell
+(arangosh) is needed. The scripts currently support ArangoDB versions 3.3, 3.4,
+3.5, 3.6, and 3.7.
 
 ## Installation
 
 Just clone this repository to some location on your local filesystem, then `cd`
-into the directory. Please note that some of the debug scripts may want to write into
-that directory too.
+into the directory. Please note that some of the debug scripts may want to write
+into that directory too.
 
 ## Usage
 
-If `arangosh` is installed and is found in your `$PATH` you should be able to just run:
-```
-./debugging/index.js help
-```
-otherwise you need to use:
-```
-./path/to/arangosh --javascript.execute ./debugging/index.js help
-```
-
-If any of the commands fails with `cannot find configuration file`, you will additionally
-have to supply the path to a valid arangosh.conf configuration file via the `-c` option:
+If `arangosh` is installed and is found in your `$PATH` you should be able to
+just run:
 
 ```
-./path/to/arangosh -c /etc/arangodb3/arangosh.conf --javascript.execute ./debugging/index.js help
+./arangodb-debug.sh help
 ```
-(here it is expected that the configuration file resides in `/etc/arangodb3`, please adjust
-as required).
 
-One of the above commands should provide you with a list of the available tasks. Each task
-will be followed by a range of suitable ArangoDB versions and a short description of the
-task. For this instruction, we will always use the short version of the command.
+otherwise you should set the environment variable `ARANGOSH`:
+
+```
+ARANGOSH=./path/to/arangosh ./arangodb-debug.sh help
+```
+
+Note that you might be asked for a password. For help, just press return. See
+below for more details.
+
+One of the above commands should provide you with a list of the available
+tasks. Each task will be followed by a range of suitable ArangoDB versions and a
+short description of the task. For this instruction, we will always use the
+short version of the command.
 
 ```
 » ./debugging/index.js help
@@ -53,35 +53,24 @@ Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE I
   post-agency-plan                     3.3.23 - 3.6.99    Posts an agency dump to an ArangoDB agency leader.
 
 analyze tasks:
-  analyze                              3.3.23 - 3.6.99    Performs health analysis on your cluster and produces input files for other cleanup tasks.
-  show-supervision                     3.3.23 - 3.6.99    Show the state of the supervision.
-
-cleanup tasks:
-  clear-maintenance                    3.3.23 - 3.6.99    Clear maintenance and hot-backup flag.
-  create-missing-collections           3.3.23 - 3.6.99    Adds missing collections found by the analyze task.
-  ...
+  analyze                              3.3.23 - 3.6.99    Performs health analysis on your cluster and p  ...
 
 move shard tasks:
   create-move-analysis                 3.3.23 - 3.6.99    Creates analysis for a plan to rebalance shards in your cluster.
-  create-move-plan (deprecated)        3.3.23 - 3.6.99    Creates plan to rebalance shards in your cluster.
   ...
-
-standalone tasks:
-  collect-db-info                      3.3.23 - 3.6.99    Dumps information about the database and collection.
-  dump                                 3.3.23 - 3.6.99    Dumps the agency.
-  help                                 3.3.23 - 4.0.0     Shows this help.
-  users-permissions                    3.3.22 - 3.6.99    Extracts all users and permissions from the system database.
 ```
 
 Please note that only those tasks are shown that are supported by the version of
 ArangoDB actually in use.
 
-Please also note that the ArangoShell may ask you for a password. For getting help
-on the available tasks you can simply ignore the password prompt. For invoking any of
-the "real" tasks later, please keep in mind that the tasks are executed in a regular
-ArangoShell, so it supports the options `--server.endpoint` to connect to an
-arbitrary server, `--server.username` to specify the database user and also
-`--server.ask-jwt-secret` for passing credentials.
+Please also note that the ArangoShell may ask you for a password. For getting
+help on the available tasks you can simply ignore the password prompt. For
+invoking any of the "real" tasks later, please keep in mind that the tasks are
+executed in a regular ArangoShell, so it supports the options
+`--server.endpoint` to connect to an arbitrary server, `--server.username` to
+specify the database user and also `--server.ask-jwt-secret` for passing
+credentials.
+
 Additionally, please note that some tasks require a working connection to either
 a coordinator or the leader agent in the cluster. This connection can also be
 established by using ArangoShell's parameter `--server.endpoint`.

@@ -5,7 +5,7 @@ exports.group= "standalone tasks";
 exports.args = [ 
   { "name" : "output-file", "optional" : false, "type": "string"},
 ];
-exports.args_arangosh = " --server.endpoint LEADER-AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Get agency-dump from an agent.";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";

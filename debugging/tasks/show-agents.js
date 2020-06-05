@@ -3,7 +3,7 @@
 exports.name = "show-agents";
 exports.group = "analyze tasks";
 exports.args = [];
-exports.args_arangosh = " --server.endpoint AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Show the status of the agents.";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";

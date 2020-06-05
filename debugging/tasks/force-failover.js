@@ -9,10 +9,10 @@ exports.args = [
   { "name" : "shard-index", "optional" : false, "type": "string", "description": "shard id (0-based) of shard to move leadership for" },
 ];
 
-exports.args_arangosh = " --server.endpoint LEADER-AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Performs forced failover as calculated by analyze task.";
-exports.selfTests = ["arango", "db", "agencyConnection"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Executes force failover as calculated by the analyze task.
 `;

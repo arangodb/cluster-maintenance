@@ -4,7 +4,7 @@ exports.name = "clear-maintenance";
 exports.group= "cleanup tasks";
 exports.args = [];
 
-exports.args_arangosh = " --server.endpoint LEADER-AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Clear maintenance and hot-backup flag.";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";

@@ -9,7 +9,7 @@ exports.args = [
     "description": "database server"
   }
 ];
-exports.args_arangosh = "| --server.endpoint AGENT";
+exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Cleanout a server.";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.6.0 - 3.7.99";

@@ -10,10 +10,10 @@ exports.args = [
     "description": "agency dump"
   }
 ];
-exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
+exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Allows to inspect shards being moved.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Allows to track progress of shard movement.
 `;
@@ -128,13 +128,17 @@ exports.run = function (extra, args) {
 
   let printTodos = function (info) {
     let table = new AsciiTable('Jobs');
+    let seen = false;
     table.setHeading('type', 'count');
 
     _.each(info.jobs, function (jobs, name) {
       table.addRow(name, jobs.length);
+      seen = true;
     });
 
-    print(table.toString());
+    if (seen) {
+      print(table.toString());
+    }
   };
 
   let printFailedReasons = function (info) {
@@ -152,30 +156,36 @@ exports.run = function (extra, args) {
 
   let printToDoJobs = function (info) {
     let table = new AsciiTable('ToDo (planned)');
+    let seen = false;
     table.setHeading('from', 'to', 'count');
 
     _.each(info.serverToServerToDo, function (froms, to) {
       _.each(froms, function (jobs, from) {
-        table.addRow(from, to,
-          jobs.length);
+        table.addRow(from, to, jobs.length);
+        seen = true;
       });
     });
 
-    print(table.toString());
+    if (seen) {
+      print(table.toString());
+    }
   };
 
   let printPendingJobs = function (info) {
     let table = new AsciiTable('Pending');
+    let seen = false;
     table.setHeading('from', 'to', 'count');
 
     _.each(info.serverToServerPending, function (froms, to) {
       _.each(froms, function (jobs, from) {
-        table.addRow(from, to,
-          jobs.length);
+        table.addRow(from, to, jobs.length);
+        seen = true;
       });
     });
 
-    print(table.toString());
+    if (seen) {
+      print(table.toString());
+    }
   };
 
   const info = {};

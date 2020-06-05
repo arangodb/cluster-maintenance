@@ -3,16 +3,21 @@
 exports.name = "post-agency-plan";
 exports.group = "Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!";
 exports.args = [
-  {"name": "dump-file", "optional": false, "type": "jsonfile", "description": "agency dump file"}
+  {
+    "name": "dump-file",
+    "optional": false,
+    "type": "jsonfile",
+    "description": "agency dump file"
+  }
 ];
 exports.args_arangosh = "| --server.endpoint LEADER-AGENT";
 exports.description = "Posts an agency dump to an ArangoDB agency leader.";
 exports.selfTests = ["arango", "db"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
-This task takes an agency dump file, modificates it to fit to the new server and post it.
+This task takes an agency dump file, modifies it to fit to the new server and post it.
 
- - arangosh --javascript.execute ../debug-scripts/debugging/index.js  post-agency-plan agencyDump.json --server.endpoint tcp://(ip-address):(agency-port)> (agency)
+    ./arangodb-debug.sh post-agency-plan --server.endpoint tcp://(ip-address):(agency-port)> agencyDump.json
 `;
 
 exports.run = function (extra, args) {
@@ -20,6 +25,9 @@ exports.run = function (extra, args) {
   // imports
   const helper = require('../helper.js');
   const _ = require('underscore');
+
+  // needs to be connected to the leader agent
+  helper.checkLeader();
 
   // variables
   const file = helper.getValue("dump-file", args);

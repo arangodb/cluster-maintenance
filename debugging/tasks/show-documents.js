@@ -16,7 +16,7 @@ exports.args = [
     "description": "'count', 'indexes', 'size', 'total'"
   }
 ];
-exports.args_arangosh = " --server.endpoint AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Show number of documents.";
 exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
 exports.requires = "3.3.23 - 3.7.99";
@@ -116,17 +116,6 @@ exports.run = function (extra, args) {
   });
 
   scount++;
-
-  const table2 = new AsciiTable('Database Servers');
-  table2.setHeading('ID', 'Short', 'Address');
-
-  _.each(serverCount, function (val, id) {
-    table2.addRow(id, val.shortName, val.ip);
-  });
-
-  print();
-  print(table2.toString());
-  print();
 
   _.each(serverMap, function (val, id) {
     const ip = val[0].ip;

@@ -5,10 +5,10 @@ exports.group= "cleanup tasks";
 exports.args = [ 
   { "name" : "zombie-callback-file", "optional" : false, "type": "jsonfile", "description": "json file created by analyze task" } 
 ];
-exports.args_arangosh = " --server.endpoint LEADER-AGENT";
+exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Removes zombie callbacks found by analyze task.";
-exports.selfTests = ["arango", "db", "agencyConnection"];
-exports.requires = "3.3.23 - 3.6.99";
+exports.selfTests = ["arango", "db", "leaderAgencyConnection"];
+exports.requires = "3.3.23 - 3.7.99";
 exports.info = `
 Removes zombies callbacks found by the analyze task.
 `;
