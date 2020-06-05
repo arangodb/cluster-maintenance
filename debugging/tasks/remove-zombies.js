@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, arango, db */
 exports.name = "remove-zombies";
 exports.group= "cleanup tasks";
 exports.args = [ 
-  { "name" : "zombie-file", "optional" : false, "type": "jsonfile", "description": "json file created by analyze task" } 
+  {
+    "name": "zombie-file",
+    "optional": false,
+    "type": "jsonfile",
+    "description": "json file created by analyze task"
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Removes zombie collections found by analyze task.";

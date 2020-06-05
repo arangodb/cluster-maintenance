@@ -116,7 +116,7 @@ const checkLeader = () => {
   if (redirect.code === 307) {
     const location = redirect.headers.location;
     fatal("You need to connect to the leader agent at '" +
-	  location.substr(0, location.length - url.length) + "'");
+          location.substr(0, location.length - url.length) + "'");
     } else if (redirect.error) {
       fatal("Got error while checking for leader agency: " +
       redirect.errorMessage);
@@ -191,7 +191,7 @@ const findAgencyFromCoordinator = () => {
   }
 
   for (let key in response.Health) {
-    server = response.Health[key];
+    const server = response.Health[key];
 
     if (server.Role === 'Agent' && server.Status === 'GOOD') {
       print("INFO found an agent at '" + server.Endpoint + "'");

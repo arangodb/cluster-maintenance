@@ -1,7 +1,7 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "help";
-exports.group= "standalone tasks";
+exports.group = "standalone tasks";
 exports.args = [ { "name" : "task-name", "optional" : true, "type": "string"} ];
 exports.description = "Shows this help.";
 exports.requires = "3.3.23 - 4.99.99";

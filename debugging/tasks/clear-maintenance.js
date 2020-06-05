@@ -1,7 +1,7 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "clear-maintenance";
-exports.group= "cleanup tasks";
+exports.group = "cleanup tasks";
 exports.args = [];
 
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
@@ -12,11 +12,8 @@ exports.info = `
 Checks the state of the supervision.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   const helper = require('../helper.js');
-
-  // imports
-  const _ = require('underscore');
 
   // get an agency dump
   const dump = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
@@ -48,7 +45,7 @@ exports.run = function(extra, args) {
   data[0].push(obj);
 
   if (maintenance || create) {
-    const res = helper.httpWrapper('POST','/_api/agency/write', data);
+    const res = helper.httpWrapper('POST', '/_api/agency/write', data);
 
     if (res.results[0] === 0) {
       print("WARNING: pre-condition failed, maybe cleanup already done");

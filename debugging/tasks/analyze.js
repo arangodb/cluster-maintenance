@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "analyze";
-exports.group= "analyze tasks";
+exports.group = "analyze tasks";
 exports.args = [
-  { "name" : "agency-dump", "optional" : true, "type": "jsonfile", "description": "agency dump" }
+  {
+    "name": "agency-dump",
+    "optional": true,
+    "type": "jsonfile",
+    "description": "agency dump"
+  }
 ];
 exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Performs health analysis on your cluster and produces input files for other cleanup tasks.";
@@ -15,7 +20,7 @@ commands to fix some known problems like the removal of zombies or dead
 primaries or creation of missing system collections.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // imports
   const fs = require('fs');
   const _ = require('lodash');
@@ -45,16 +50,16 @@ exports.run = function(extra, args) {
       }
     });
     info.failedInstances = failedInstanceEndpoints;
-  }
+  };
 
   const saveZombieCallbacks = function (info) {
     let zombieCallbacks = [];
     if (info.failedInstances.length > 0 && info.callbacks !== undefined) {
       Array.prototype.forEach.call(info.callbacks, callback => {
         let url = Object.keys(callback)[0];
-        let fs  = url.indexOf("/");
-        let end = url.indexOf("/", fs+2);
-        if (info.failedInstances.includes(url.slice(0,end))) {
+        let fs = url.indexOf("/");
+        let end = url.indexOf("/", fs + 2);
+        if (info.failedInstances.includes(url.slice(0, end))) {
           zombieCallbacks.push(callback);
         }
       });
@@ -67,13 +72,11 @@ exports.run = function(extra, args) {
     }
   };
 
-
   const zombieCoordinators = (info, dump) => {
     let plannedCoords = dump.arango.Plan.Coordinators;
     let currentCoords = dump.arango.Current.Coordinators;
 
-    const health = dump.arango.Supervision.Health;
-    var zombies = [];
+    let zombies = [];
 
     _.each(Object.keys(currentCoords), function (id) {
       if (!plannedCoords.hasOwnProperty(id)) {
@@ -91,7 +94,7 @@ exports.run = function(extra, args) {
   };
 
   const printPrimaries = function (info) {
-    var table = new AsciiTable('Primaries');
+    let table = new AsciiTable('Primaries');
     table.setHeading('', 'status');
 
     _.each(info.primariesAll, function (server, name) {
@@ -102,7 +105,7 @@ exports.run = function(extra, args) {
   };
 
   const printZombieCoordinators = function (info) {
-    var haveZombies = info.zombieCoordinators.length > 0;
+    let haveZombies = info.zombieCoordinators.length > 0;
     if (!haveZombies) {
       printGood('Your cluster does not have any zombie coordinators');
       return false;
@@ -113,7 +116,7 @@ exports.run = function(extra, args) {
   };
 
   const printCleanedFailoverCandidates = function (info) {
-    var haveCleanedFailovers = (0 < Object.keys(info.correctFailoverCandidates).length);
+    let haveCleanedFailovers = (Object.keys(info.correctFailoverCandidates > 0).length);
     if (!haveCleanedFailovers) {
       printGood('Your cluster does not have any cleaned servers for failover');
       return false;
@@ -123,33 +126,10 @@ exports.run = function(extra, args) {
     }
   };
 
-  const setGlobalShard = function (info, shard) {
-    let dbServer = shard.dbServer;
-    let isLeader = shard.isLeader;
-
-    if (!info.shardsPrimary[dbServer]) {
-      info.shardsPrimary[dbServer] = {
-        leaders: [],
-        followers: [],
-        realLeaders: []
-      };
-    }
-
-    if (isLeader) {
-      info.shardsPrimary[dbServer].leaders.push(shard);
-
-      if (shard.isReadLeader) {
-        info.shardsPrimary[dbServer].realLeaders.push(shard);
-      }
-    } else {
-      info.shardsPrimary[dbServer].followers.push(shard);
-    }
-  };
-
   const recursiveMapPrinter = (map) => {
     if (map instanceof Map) {
       const res = {};
-      for (let [k,v] of map) {
+      for (let [k, v] of map) {
         res[k] = recursiveMapPrinter(v);
       }
       return res;
@@ -157,7 +137,7 @@ exports.run = function(extra, args) {
       return map.map(v => recursiveMapPrinter(v));
     } else if (map instanceof Object) {
       const res = {};
-      for (let [k,v] of Object.entries(map)) {
+      for (let [k, v] of Object.entries(map)) {
         res[k] = recursiveMapPrinter(v);
       }
       return res;
@@ -338,7 +318,7 @@ exports.run = function(extra, args) {
         // Iterate over all current distributions on shardIndex, and if we find an insync follower
         // note it to the candidates
         for (const [cid, curServers] of group.current) {
-          const { shard, servers} = curServers[shardIndex];
+          const {shard, servers} = curServers[shardIndex];
           allShards.push(shard);
           for (const [c, list] of candidates) {
             if (servers.indexOf(c) !== -1) {
@@ -461,7 +441,7 @@ exports.run = function(extra, args) {
   };
 
   const printDatabases = function (info) {
-    var table = new AsciiTable('Databases');
+    let table = new AsciiTable('Databases');
     table.setHeading('', 'collections', 'shards', 'leaders', 'followers', 'Real-Leaders');
 
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
@@ -475,7 +455,7 @@ exports.run = function(extra, args) {
   };
 
   const printCollections = function (info) {
-    var table = new AsciiTable('collections');
+    let table = new AsciiTable('collections');
     table.setHeading('', 'CID', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
 
     _.each(_.sortBy(info.collections, x => x.fullName), function (collection, name) {
@@ -488,7 +468,7 @@ exports.run = function(extra, args) {
   };
 
   const printPrimaryShards = function (info) {
-    var table = new AsciiTable('Primary Shards');
+    let table = new AsciiTable('Primary Shards');
     table.setHeading('', 'Leaders', 'Followers', 'Real Leaders');
 
     _.each(info.shardsPrimary, function (shards, dbServer) {
@@ -500,9 +480,9 @@ exports.run = function(extra, args) {
   };
 
   const printZombies = function (info) {
-    if (0 < info.zombies.length) {
+    if (info.zombies.length > 0) {
       printBad('Your cluster has some zombies');
-      var table = new AsciiTable('Zombies');
+      let table = new AsciiTable('Zombies');
       table.setHeading('Database', 'CID');
 
       _.each(info.zombies, function (zombie) {
@@ -542,7 +522,7 @@ exports.run = function(extra, args) {
   };
 
   const saveCleanedFailoverCandidates = function (info) {
-    if (0 < Object.keys(info.correctFailoverCandidates).length) {
+    if (Object.keys(info.correctFailoverCandidates).length > 0) {
       fs.write("cleaned-failovers.json", JSON.stringify(info.correctFailoverCandidates));
       print("To remedy the cleaned out failover db servers issue please run the task `remove-cleaned-failovers` against the leader AGENT, e.g.:");
       print(` ./debugging/index.js <options> remove-cleaned-failovers ${fs.makeAbsolute('cleaned-failovers.json')}`);
@@ -551,9 +531,9 @@ exports.run = function(extra, args) {
   };
 
   const printBroken = function (info) {
-    if (0 < info.broken.length) {
+    if (info.broken.length > 0) {
       printBad('Your cluster has broken collections');
-      var table = new AsciiTable('Broken');
+      let table = new AsciiTable('Broken');
       table.setHeading('Database', 'CID');
 
       _.each(info.broken, function (zombie) {
@@ -587,9 +567,9 @@ exports.run = function(extra, args) {
   };
 
   const printCurrentDatabasesDeadPrimaries = function (info) {
-    if (0 < info.databasesDeadPrimaries.length) {
+    if (info.databasesDeadPrimaries.length > 0) {
       printBad('Your cluster has dead primaries in Current');
-      var table = new AsciiTable('Dead primaries in Current');
+      let table = new AsciiTable('Dead primaries in Current');
       table.setHeading('Database', 'Primary');
 
       _.each(info.databasesDeadPrimaries, function (zombie) {
@@ -629,9 +609,9 @@ exports.run = function(extra, args) {
   };
 
   const printEmptyDatabases = function (info) {
-    if (0 < info.emptyDatabases.length) {
+    if (info.emptyDatabases.length > 0) {
       printBad('Your cluster has some skeleton databases (databases without collections)');
-      var table = new AsciiTable('Skeletons');
+      let table = new AsciiTable('Skeletons');
       table.setHeading('Database name');
 
       _.each(info.emptyDatabases, function (database) {
@@ -667,12 +647,12 @@ exports.run = function(extra, args) {
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
       let system = database.collections.filter(function (c) {
         return c.name[0] === '_';
-      }).map(function(c) {
+      }).map(function (c) {
         return c.name;
       });
 
       let missing = [];
-      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function(name) {
+      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function (name) {
         if (system.indexOf(name) === -1) {
           missing.push(name);
         }
@@ -687,7 +667,7 @@ exports.run = function(extra, args) {
   const printMissingCollections = function (info) {
     if (info.missingCollections.length > 0) {
       printBad('Your cluster is missing relevant system collections:');
-      var table = new AsciiTable('Missing collections');
+      let table = new AsciiTable('Missing collections');
       table.setHeading('Database', 'Collections');
 
       _.each(info.missingCollections, function (entry) {
@@ -717,20 +697,20 @@ exports.run = function(extra, args) {
   const extractCleanedFailoverCandidates = (info, dump) => {
     const currentCollections = dump.arango.Current.Collections;
     const cleanedServers = dump.arango.Target.CleanedServers;
-    var fixes = {};
+    let fixes = {};
     Object.keys(currentCollections).forEach(function (dbname) {
-      var database = dump.arango.Current.Collections[dbname];
-      Object.keys(database).forEach(function(colname) {
-        var collection = database[colname];
-        Object.keys(collection).forEach(function(shname) {
-          var shard = collection[shname];
-          var inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
-          var left = shard.failoverCandidates;
+      let database = dump.arango.Current.Collections[dbname];
+      Object.keys(database).forEach(function (colname) {
+        let collection = database[colname];
+        Object.keys(collection).forEach(function (shname) {
+          let shard = collection[shname];
+          let inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
+          let left = shard.failoverCandidates;
           left = _.difference(left, inter);
           if (inter.length > 0) {
-            fixes["arango/Current/Collections/"+ dbname +"/"+ colname +"/"+ shname +
-                  "/failoverCandidates"]
-              = [left, shard.failoverCandidates];
+            const n = "arango/Current/Collections/" + dbname + "/" +
+                  colname + "/" + shname + "/failoverCandidates";
+            fixes[n] = [left, shard.failoverCandidates];
           }
         });
       });
@@ -743,7 +723,7 @@ exports.run = function(extra, args) {
     const currentCollections = dump.arango.Current.Collections;
     const compareFollowers = (plan, current) => {
       // If leaders are not equal we are out of sync.
-      if(plan[0] !== current[0]) {
+      if (plan[0] !== current[0]) {
         return false;
       }
       if (plan.length === 1) {
@@ -833,20 +813,20 @@ exports.run = function(extra, args) {
 
           if (index.id === "1") {
             newIndexes.push({
-              "id": "1", 
-              "type": "edge", 
-              "name": "edge", 
-              "fields": [ "_from" ], 
-              "unique": false, 
-              "sparse": false 
+              "id": "1",
+              "type": "edge",
+              "name": "edge",
+              "fields": [ "_from" ],
+              "unique": false,
+              "sparse": false
             });
             newIndexes.push({
-              "id": "2", 
-              "type": "edge", 
-              "name": "edge", 
-              "fields": [ "_to" ], 
-              "unique" : false, 
-              "sparse" : false 
+              "id": "2",
+              "type": "edge",
+              "name": "edge",
+              "fields": [ "_to" ],
+              "unique": false,
+              "sparse": false
             });
           } else if (index.id !== "2") {
             newIndexes.push(index);
@@ -919,7 +899,7 @@ exports.run = function(extra, args) {
 
   infected = printZombies(info) || infected;
   infected = printZombieCoordinators(info) || infected;
-  infected = printCleanedFailoverCandidates(info) || infected
+  infected = printCleanedFailoverCandidates(info) || infected;
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
   infected = printCurrentDatabasesDeadPrimaries(info) || infected;

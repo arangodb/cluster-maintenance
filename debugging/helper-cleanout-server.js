@@ -68,6 +68,7 @@ exports.run = function (extra, args, cleanout) {
   print("INFO checking shard distribution every " + sleep + " seconds...");
 
   let count;
+  let leaderOnly;
   do {
     count = 0;
     leaderOnly = 0;
@@ -80,32 +81,32 @@ exports.run = function (extra, args, cleanout) {
     }
 
     for (let dbase in dblist) {
-        const sd = arango.GET("/_db/" + dblist[dbase] + "/_admin/cluster/shardDistribution");
-        const collections = sd.results;
+      const sd = arango.GET("/_db/" + dblist[dbase] + "/_admin/cluster/shardDistribution");
+      const collections = sd.results;
 
-        for (let collection in collections) {
-          const current = collections[collection].Current;
+      for (let collection in collections) {
+        const current = collections[collection].Current;
 
-          for (let shard in current) {
-            const s = current[shard];
+        for (let shard in current) {
+          const s = current[shard];
 
-            if (s.leader === shortName) {
-              ++count;
+          if (s.leader === shortName) {
+            ++count;
+          }
+
+          if (cleanout) {
+            _.each(s.followers, function (key) {
+              if (key === shortName) {
+                ++count;
+              }
+            });
+          } else {
+            if (s.followers.length === 0 && s.leader === shortName) {
+              ++leaderOnly;
             }
-
-            if (cleanout) {
-              _.each(s.followers, function (key) {
-                if (key === shortName) {
-                  ++count;
-                }
-              });
-            } else {
-	      if (0 == s.followers.length && s.leader === shortName) {
-		++leaderOnly;
-	      }
-	    }
           }
         }
+      }
     }
 
     if (cleanout) {

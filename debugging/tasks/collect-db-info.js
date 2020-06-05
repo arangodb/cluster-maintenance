@@ -1,9 +1,13 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, db */
 exports.name = "collect-db-info";
 exports.group = "analyze tasks";
-exports.args = [ 
-  { "name" : "output-file", "optional" : false, "type": "string"},
+exports.args = [
+  {
+    "name": "output-file",
+    "optional": false,
+    "type": "string"
+  }
 ];
 exports.args_arangosh = " --server.endpoint SINGLESERVER-OR-COORDINATOR --server.database DATABASE";
 exports.description = "Dumps information about the database and collection.";
@@ -47,7 +51,7 @@ const anonymize = function (doc) {
   return doc;
 };
 
-const processCollection = function(collection) {
+const processCollection = function (collection) {
   let name = collection._name;
   let type = collection._type;
   let info = {
@@ -64,7 +68,7 @@ const processCollection = function(collection) {
 
   if (name === '_graphs' || name === '_aqlfunctions' || name === '_analyzers') {
     info.documents = collection.toArray();
-  } else if (name[0] != '_') {
+  } else if (name[0] !== '_') {
     let max = 10;
     let examples = db._query(`
       FOR doc IN @@collection
@@ -77,7 +81,7 @@ const processCollection = function(collection) {
   return info;
 };
 
-const analyzeEdgeCollection = function(collection) {
+const analyzeEdgeCollection = function (collection) {
   let name = collection._name;
   let max = 1000;
   let examples = db._query(`
@@ -99,7 +103,7 @@ const analyzeEdgeCollection = function(collection) {
   };
 };
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // imports
   const fs = require('fs');
   const helper = require('../helper.js');
@@ -127,7 +131,7 @@ exports.run = function(extra, args) {
     info.edges = [];
 
     for (const c of collections) {
-      if (c._type === 3 && 0 < c.count()) {
+      if (c._type === 3 && c.count() > 0) {
         print("analyizing edge collection '" + c._name + "'");
         info.edges.push(analyzeEdgeCollection(c));
       }
@@ -135,9 +139,9 @@ exports.run = function(extra, args) {
 
     fs.write(file, JSON.stringify(info));
 
-    helper.printGood("wrote info to: " + file)
+    helper.printGood("wrote info to: " + file);
   } catch (ex) {
-    helper.fatal("cannot get information: " + ex)
+    helper.fatal("cannot get information: " + ex);
   }
 
 };

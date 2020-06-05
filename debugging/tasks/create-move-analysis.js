@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, arango, db */
 exports.name = "create-move-analysis";
 exports.group = "move shard tasks";
 exports.args = [
-  {"name": "dump-file", "optional": true, "type": "jsonfile", "description": "agency dump file"}
+  {
+    "name": "dump-file",
+    "optional": true,
+    "type": "jsonfile",
+    "description": "agency dump file"
+  }
 ];
 exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Creates analysis for a plan to rebalance shards in your cluster.";

@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "remove-cleaned-failovers";
 exports.group= "cleanup tasks";
 exports.args = [ 
-  { "name" : "cleaned-failovers-file", "optional" : false, "type": "jsonfile", "description": "json file created by analyze task" } 
+  {
+    "name": "cleaned-failovers-file",
+    "optional": false,
+    "type": "jsonfile",
+    "description": "json file created by analyze task"
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Clears cleaned failover candidates found by analyze task.";

@@ -1,9 +1,14 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "remove-skeleton-databases";
 exports.group= "cleanup tasks";
 exports.args = [ 
-  { "name" : "remove-skeleton-database-file", "optional" : false, "type": "jsonfile", "description": "json file created by analyze task" } 
+  {
+    "name": "remove-skeleton-database-file",
+    "optional": false,
+    "type": "jsonfile",
+    "description": "json file created by analyze task"
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Removes skeleton databases found by analyze task.";

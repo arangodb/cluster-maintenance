@@ -1,7 +1,6 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
 exports.name = "history";
-exports.group= "standalone tasks";
+exports.group = "standalone tasks";
 exports.args = [ 
   { "name" : "output-file", "optional" : false, "type": "string"},
 ];

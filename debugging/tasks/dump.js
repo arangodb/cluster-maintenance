@@ -1,9 +1,13 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, arango */
 exports.name = "dump";
 exports.group= "standalone tasks";
 exports.args = [ 
-  { "name" : "output-file", "optional" : false, "type": "string"},
+  {
+    "name": "output-file",
+    "optional": false,
+    "type": "string"
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Get agency-dump from an agent.";

@@ -1,5 +1,5 @@
-/*jshint globalstrict:false, strict:false, sub: true */
-/*global ARGUMENTS, print, arango, db */
+/* jshint globalstrict:false, strict:false, sub: true */
+/* global print, db */
 exports.name = "repair-broken-edge-indexes";
 exports.group= "cleanup tasks";
 exports.args = [ 
