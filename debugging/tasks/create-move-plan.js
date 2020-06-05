@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "create-move-plan (deprecated)";
 exports.group = "move shard tasks";
 exports.args = [

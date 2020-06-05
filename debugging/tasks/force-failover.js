@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "force-failover";
 exports.group = "move shard tasks";
 exports.args = [
@@ -23,9 +23,6 @@ exports.run = function (extra, args) {
   let target = helper.getValue("target-server", args);
   let leaderCid = helper.getValue("leader-cid", args);
   let shardIndex = helper.getValue("shard-index", args);
-
-  // imports
-  const _ = require('underscore');
 
   if (!shardGroups.hasOwnProperty(leaderCid)) {
     print(`FATAL: ${leaderCid} is not tracked in the output, it is not necessary to do a force failover on it, as it still has sync followers`);

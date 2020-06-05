@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "remove-zombies";
 exports.group = "cleanup tasks";
 exports.args = [

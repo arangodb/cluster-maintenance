@@ -20,8 +20,6 @@ Repairs broken edge index definition found by analyze task.
 exports.run = function (extra, args) {
 
   // imports
-  const fs = require('fs');
-  const _ = require('underscore');
   const helper = require('../helper.js');
   const indexes = helper.getValue("broken-edge-indexes-file", args);
 

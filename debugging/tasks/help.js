@@ -2,7 +2,7 @@
 /* global print */
 exports.name = "help";
 exports.group = "standalone tasks";
-exports.args = [ { "name": "task-name", "optional": true, "type": "string"} ];
+exports.args = [ { "name": "task-name", "optional": true, "type": "string" } ];
 exports.description = "Shows this help.";
 exports.requires = "3.3.23 - 4.99.99";
 exports.selfTests = [];

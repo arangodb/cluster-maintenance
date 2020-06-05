@@ -21,7 +21,6 @@ Removes dead primaries found by the analyze task.
 exports.run = function (extra, args) {
 
   // imports
-  const fs = require('fs');
   const _ = require('underscore');
   const helper = require('../helper.js');
   let zombies = helper.getValue("dead-primaries-file", args);

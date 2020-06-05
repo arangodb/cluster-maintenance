@@ -2,7 +2,11 @@
 exports.name = "history";
 exports.group = "standalone tasks";
 exports.args = [
-  { "name": "output-file", "optional": false, "type": "string"}
+  {
+    "name": "output-file",
+    "optional": false,
+    "type": "string"
+  }
 ];
 exports.args_arangosh = " --server.endpoint COORDINATOR";
 exports.description = "Get agency-history from an agent.";

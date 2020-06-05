@@ -1,5 +1,4 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango */
 exports.name = "dump";
 exports.group = "standalone tasks";
 exports.args = [

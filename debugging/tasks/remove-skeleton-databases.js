@@ -21,7 +21,6 @@ Removes skeleton databases.
 exports.run = function (extra, args) {
 
   // imports
-  const fs = require('fs');
   const _ = require('underscore');
   const helper = require('../helper.js');
 

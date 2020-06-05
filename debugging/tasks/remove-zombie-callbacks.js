@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "remove-zombie-callbacks";
 exports.group = "cleanup tasks";
 exports.args = [
@@ -20,7 +20,6 @@ Removes zombies callbacks found by the analyze task.
 
 exports.run = function (extra, args) {
   // imports
-  const _ = require('underscore');
   const helper = require('../helper.js');
   let zombies = helper.getValue("zombie-callback-file", args);
   let data = [];

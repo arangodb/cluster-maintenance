@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "remove-zombie-coordinators";
 exports.group = "cleanup tasks";
 exports.args = [
@@ -21,8 +21,6 @@ Removes dead coordinators found by the analyze task.
 exports.run = function (extra, args) {
 
   // imports
-  const fs = require('fs');
-  const _ = require('underscore');
   const helper = require('../helper.js');
   let zombies = helper.getValue("zombie-coordinators-file", args);
 

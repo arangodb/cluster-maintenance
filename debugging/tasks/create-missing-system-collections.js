@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print, db */
 exports.name = "create-missing-system-collections";
 exports.group = "cleanup tasks";
 exports.args = [ ];

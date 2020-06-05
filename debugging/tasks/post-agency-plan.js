@@ -1,4 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
+/* global print */
 exports.name = "post-agency-plan";
 exports.group = "Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!";
 exports.args = [

@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print, arango, db */
+/* global print */
 exports.name = "create-move-analysis";
 exports.group = "move shard tasks";
 exports.args = [
@@ -268,7 +268,7 @@ exports.run = function (extra, args) {
     );
 
     let shardsWeHave = shardDistributeInfo.shardTotalAmount;
-    if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
+    if (shardsWeHave === shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // perfect distribution
       score = 1;
       // } else if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
@@ -279,7 +279,7 @@ exports.run = function (extra, args) {
     } else if (shardsWeHave < shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // we have less then perfect shards, we might need fill that one up
       score = shardsWeHave / shardDistributeInfo.perfectAmountOfShards;
-    } else if (shardsWeHave == 0) {
+    } else if (shardsWeHave === 0) {
       // we do not have any shards
       score = 0;
     }
@@ -314,7 +314,7 @@ exports.run = function (extra, args) {
   };
 
   let generateAnalysis = function (agencyCollections) {
-    resultData = {};
+    let resultData = {};
 
     _.each(agencyCollections, function (collections, databaseName) {
       _.each(collections, function (collection) {
@@ -735,7 +735,7 @@ exports.run = function (extra, args) {
     let moveHelper = function (bestAmount, perfectAmount, bestDatabaseServer, weakestDatabaseServer, leader) {
       if (bestAmount > perfectAmount) {
         let totalAmountToMove = bestAmount - perfectAmount;
-	if (totalAmountToMove > perfectAmount) {
+        if (totalAmountToMove > perfectAmount) {
           totalAmountToMove = perfectAmount;
         }
 

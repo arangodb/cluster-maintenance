@@ -21,8 +21,6 @@ Removes cleaned failover candidates found by the analyze task.
 exports.run = function (extra, args) {
 
   // imports
-  const fs = require('fs');
-  const _ = require('underscore');
   const helper = require('../helper.js');
   let shards = helper.getValue("cleaned-failovers-file", args);
 
