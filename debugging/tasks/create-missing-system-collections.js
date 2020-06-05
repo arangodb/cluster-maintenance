@@ -1,7 +1,7 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "create-missing-system-collections";
-exports.group= "cleanup tasks";
+exports.group = "cleanup tasks";
 exports.args = [ ];
 exports.args_arangosh = "--server.endpoint COORDINATOR";
 exports.description = "Adds missing system collections for all databases (does not require the analyze task).";
@@ -16,7 +16,7 @@ To be used from the arangosh, with a privileged user (i.e. a user that has
 write privileges for all databases).
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   const semver = require("semver");
   let old = db._name();
   let errors = 0;
@@ -27,19 +27,19 @@ exports.run = function(extra, args) {
 
   // with 3.5 some collections are obsolete
   const version = db._version();
-  if(semver.lt(version, "3.5.0")) {
+  if (semver.lt(version, "3.5.0")) {
     colls = colls.concat([ "_modules", "_frontend", "_routing" ]);
   }
 
   db._useDatabase("_system");
   let dbs = db._databases();
   dbs.sort();
-  dbs.forEach(function(name) {
+  dbs.forEach(function (name) {
     try {
       db._useDatabase(name);
       print("# checking database " + name);
 
-      colls.forEach(function(collection) {
+      colls.forEach(function (collection) {
         let c = db._collection(collection);
         if (c !== null) {
           return;

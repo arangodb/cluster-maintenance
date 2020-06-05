@@ -1,8 +1,8 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print */
 exports.name = "remove-cleaned-failovers";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "cleaned-failovers-file",
     "optional": false,
@@ -18,7 +18,7 @@ exports.info = `
 Removes cleaned failover candidates found by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
 
   // imports
   const fs = require('fs');
@@ -27,12 +27,12 @@ exports.run = function(extra, args) {
   let shards = helper.getValue("cleaned-failovers-file", args);
 
   var trx = [];
-  Object.keys(shards).forEach(function(shard) {
+  Object.keys(shards).forEach(function (shard) {
     var oper = {};
     var prec = {};
     oper[shard] = shards[shard][0];
-    prec[shard] = {old : shards[shard][1]};
-    trx.push ([oper, prec]); 
+    prec[shard] = {old: shards[shard][1]};
+    trx.push([oper, prec]);
   });
 
   let res = helper.httpWrapper('POST', '/_api/agency/write', trx);

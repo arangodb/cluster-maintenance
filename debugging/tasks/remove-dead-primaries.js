@@ -1,14 +1,14 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print */
 exports.name = "remove-dead-primaries";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "dead-primaries-file",
     "optional": false,
     "type": "jsonfile",
     "description": "json file created by analyze task"
-  } 
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Removes dead primaries found by analyze task.";
@@ -18,7 +18,7 @@ exports.info = `
 Removes dead primaries found by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
 
   // imports
   const fs = require('fs');
@@ -26,7 +26,7 @@ exports.run = function(extra, args) {
   const helper = require('../helper.js');
   let zombies = helper.getValue("dead-primaries-file", args);
 
-  _.each(zombies, function(zombie) {
+  _.each(zombies, function (zombie) {
     if (zombie.database.length > 0 && zombie.primary.length > 0) {
       print("removing dead primary: " + zombie.database + "/" + zombie.primary);
 

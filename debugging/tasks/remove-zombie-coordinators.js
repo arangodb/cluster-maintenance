@@ -1,8 +1,8 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "remove-zombie-coordinators";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "zombie-coordinators-file",
     "optional": false,
@@ -18,7 +18,7 @@ exports.info = `
 Removes dead coordinators found by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
 
   // imports
   const fs = require('fs');
@@ -27,7 +27,7 @@ exports.run = function(extra, args) {
   let zombies = helper.getValue("zombie-coordinators-file", args);
 
   var trx = {};
-  zombies.forEach(function(zombie) {
+  zombies.forEach(function (zombie) {
     trx['/arango/Current/Coordinators/' + zombie] = {'op': 'delete'};
   });
 

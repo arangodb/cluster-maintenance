@@ -1,14 +1,14 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "remove-zombie-callbacks";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "zombie-callback-file",
     "optional": false,
     "type": "jsonfile",
     "description": "json file created by analyze task"
-  } 
+  }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
 exports.description = "Removes zombie callbacks found by analyze task.";
@@ -18,16 +18,16 @@ exports.info = `
 Removes zombies callbacks found by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // imports
   const _ = require('underscore');
   const helper = require('../helper.js');
-  let zombies = helper.getValue("zombie-callback-file",args);
+  let zombies = helper.getValue("zombie-callback-file", args);
   let data = [];
 
   Array.prototype.forEach.call(zombies, zombie => {
     let trx = {};
-    trx[Object.values(zombie)[0]] = {"op": "unobserve", "url":Object.keys(zombie)[0]};
+    trx[Object.values(zombie)[0]] = {"op": "unobserve", "url": Object.keys(zombie)[0]};
     data.push([trx]);
   });
 

@@ -2,7 +2,7 @@
 /* global print, arango, db */
 exports.name = "create-move-plan (deprecated)";
 exports.group = "move shard tasks";
-exports.args = [ 
+exports.args = [
   {
     "name": "dump-file",
     "optional": true,
@@ -31,7 +31,7 @@ JavaScript String limitations).
 // - It has happened that all shard-leaders for a collection have been moved to the same server
 // - It looks like only leader might are rebalanced not followers
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
 
   // imports
   const helper = require('../helper.js');
@@ -50,7 +50,7 @@ exports.run = function(extra, args) {
   let leaders = {};
   let followers = {};
 
-  _.each(health, function(server, dbServer) {
+  _.each(health, function (server, dbServer) {
     if (dbServer.substring(0, 4) === "PRMR" && server.Status === 'GOOD') {
       leaders[dbServer] = [];
       followers[dbServer] = [];
@@ -58,20 +58,20 @@ exports.run = function(extra, args) {
   });
 
   // prepare shard lists
-  _.each(databases, function(val, dbName) {
+  _.each(databases, function (val, dbName) {
     distribution[dbName] = [];
   });
 
-  _.each(agencyCollections, function(collections, dbName) {
-    _.each(collections, function(collection, cId) {
+  _.each(agencyCollections, function (collections, dbName) {
+    _.each(collections, function (collection, cId) {
       let cName = collection.name;
 
       // if distributeShardsLike is set, ignore this entry
       if ((!collection.distributeShardsLike || collection.distributeShardsLike === '') && cName && cName.charAt(0) !== '_') {
         distribution[dbName].push(collection);
 
-        _.each(collection.shards, function(shard, sName) {
-          if (0 < shard.length) {
+        _.each(collection.shards, function (shard, sName) {
+          if (shard.length > 0) {
             for (let i = 0; i < shard.length; ++i) {
               let dbServer = shard[i];
 
@@ -113,7 +113,7 @@ exports.run = function(extra, args) {
   let minPositionKey;
   let nrServers = 0;
 
-  _.each(leaders, function(server, key) {
+  _.each(leaders, function (server, key) {
     nrServers++;
     let nrLeaders = server.length;
     let nrFollowers = followers[key].length;
@@ -133,7 +133,7 @@ exports.run = function(extra, args) {
   print("Smallest amount: " + minAmount);
 
   let numberOfMoves = {};
-  _.each(leaders, function(server, key) {
+  _.each(leaders, function (server, key) {
     if (key !== minPositionKey) {
       let factor = leaders[key].length / totalAmount;
 
@@ -146,12 +146,12 @@ exports.run = function(extra, args) {
   });
 
   print("Number of shards to move: ");
-  _.each(numberOfMoves, function(amount, key) {
+  _.each(numberOfMoves, function (amount, key) {
     print("Key: " + key + " number of shards to move: " + amount);
   });
 
   let moves = [];
-  let moveShard = function(shard, destination) {
+  let moveShard = function (shard, destination) {
     if (moves.length < 50000) {
       moves.push({
         database: shard.database,
@@ -163,8 +163,8 @@ exports.run = function(extra, args) {
     }
   };
 
-  let moveShards = function(dbServer, shards, amount, destination) {
-    _.each(shards, function(shard) {
+  let moveShards = function (dbServer, shards, amount, destination) {
+    _.each(shards, function (shard) {
       if (amount > 0 && !_.contains(shard.followers, destination)) {
         moveShard(shard, destination);
         amount--;
@@ -172,7 +172,7 @@ exports.run = function(extra, args) {
     });
   };
 
-  _.each(numberOfMoves, function(amount, dbServer) {
+  _.each(numberOfMoves, function (amount, dbServer) {
     moveShards(dbServer, leaders[dbServer], amount, minPositionKey);
   });
 

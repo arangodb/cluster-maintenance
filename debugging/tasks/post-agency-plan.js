@@ -51,13 +51,13 @@ exports.run = function (extra, args) {
   let x = helper.getAgencyDumpFromObjectOrAgency(undefined)[0];
 
   let newDBServerNames = [];
-  _.each(x.arango.Plan.DBServers,function (content, name) {
+  _.each(x.arango.Plan.DBServers, function (content, name) {
     newDBServerNames.push(name);
   });
 
   let tmp = JSON.stringify(agencyPlan);
   for (let i = 0; i < oldDBServernames.length; i++) {
-    var re = new RegExp(oldDBServernames[i],"g");
+    var re = new RegExp(oldDBServernames[i], "g");
     tmp = tmp.replace(re, newDBServerNames[i]);
   }
   let newAgencyPlan = JSON.parse(tmp);
@@ -67,7 +67,7 @@ exports.run = function (extra, args) {
   let data = {};
   data['/arango/Plan'] = newAgencyPlan;
 
-  print("Trying to post agency plan to agency.")
+  print("Trying to post agency plan to agency.");
   let res = helper.httpWrapper('POST', '/_api/agency/write', [[data, pre]]);
 
   if (res.results[0] === 0) {

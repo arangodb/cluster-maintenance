@@ -1,8 +1,8 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "remove-zombies";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "zombie-file",
     "optional": false,
@@ -18,13 +18,13 @@ exports.info = `
 Removes zombies found by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   // imports
   const _ = require('underscore');
   const helper = require('../helper.js');
-  let zombies = helper.getValue("zombie-file",args);
+  let zombies = helper.getValue("zombie-file", args);
 
-  _.each(zombies, function(zombie) {
+  _.each(zombies, function (zombie) {
     if (zombie.database.length > 0 && zombie.cid.length > 0) {
       print("removing zombie collection: " + zombie.database + "/" + zombie.cid);
 

@@ -1,12 +1,12 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print, arango, db */
 exports.name = "force-failover";
-exports.group= "move shard tasks";
-exports.args = [ 
-  { "name": "input-file",    "optional": false, "type": "jsonfile", "description": "json file created by analyze task" },
-  { "name": "target-server", "optional": false, "type": "string",   "description": "server id of desired new leader (e.g. PRMR-....)" },
-  { "name": "leader-cid",    "optional": false, "type": "string",   "description": "collection id of collection to move leadership for" },
-  { "name": "shard-index",   "optional": false, "type": "string",   "description": "shard id (0-based) of shard to move leadership for" }
+exports.group = "move shard tasks";
+exports.args = [
+  { "name": "input-file", "optional": false, "type": "jsonfile", "description": "json file created by analyze task" },
+  { "name": "target-server", "optional": false, "type": "string", "description": "server id of desired new leader (e.g. PRMR-....)" },
+  { "name": "leader-cid", "optional": false, "type": "string", "description": "collection id of collection to move leadership for" },
+  { "name": "shard-index", "optional": false, "type": "string", "description": "shard id (0-based) of shard to move leadership for" }
 ];
 
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
@@ -17,7 +17,7 @@ exports.info = `
 Executes force failover as calculated by the analyze task.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
   const helper = require('../helper.js');
   let shardGroups = helper.getValue("input-file", args);
   let target = helper.getValue("target-server", args);
@@ -60,7 +60,7 @@ exports.run = function(extra, args) {
     };
   }
 
-  const res = helper.httpWrapper('POST','/_api/agency/write', [[data, prec]]);
+  const res = helper.httpWrapper('POST', '/_api/agency/write', [[data, prec]]);
 
   if (res.results[0] === 0) {
     print("WARNING: pre-condition failed, maybe cleanup already done");

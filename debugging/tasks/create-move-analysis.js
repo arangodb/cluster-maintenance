@@ -84,7 +84,6 @@ exports.run = function (extra, args) {
 
   // end globals
 
-
   // start helper functions
   let getCountOfCurrentDatabaseServers = function () {
     let count = 0;
@@ -160,9 +159,9 @@ exports.run = function (extra, args) {
       return sharding;
     } else {
       if (debug) {
-        print("Debug: Empty sharding for collection " + collection.name)
+        print("Debug: Empty sharding for collection " + collection.name);
       }
-      return;
+
     }
   };
 
@@ -239,7 +238,7 @@ exports.run = function (extra, args) {
       shardFollowerAmount: followers,
       shardTotalAmount: shardTotalAmount,
       singleShardCollection: singleShardCollection
-    }
+    };
   };
 
   let calulateCollectionScore = function (analysisData, collectionId, dbServerName, databaseNameToCheck) {
@@ -272,7 +271,7 @@ exports.run = function (extra, args) {
     if (shardsWeHave == shardDistributeInfo.perfectAmountOfShards && shardsWeHave !== 0) {
       // perfect distribution
       score = 1;
-      //} else if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
+      // } else if (shardsWeHave >= shardDistributeInfo.lowerBound && shardsWeHave <= shardDistributeInfo.upperBound && shardsWeHave !== 0) {
       // we are in that range of lowerBound <-> upperBound, almost perfect distribution
       // score = 0.99;
     } else if (shardsWeHave > shardDistributeInfo.perfectAmountOfShards) {
@@ -336,7 +335,7 @@ exports.run = function (extra, args) {
               resultData[collection.name] = {};
             }
             resultData[collection.name] = fResult;
-          }*/
+          } */
         } else {
           // found leaders
           let lResult = addLeaderCollection(collection, databaseName);
@@ -365,7 +364,7 @@ exports.run = function (extra, args) {
   let isBucketMaster = function (collectionId, databaseName) {
     if (shardBucketList[databaseName][collectionId]) {
       if (debug) {
-        print("Collection: " + collectionId + " is a bucket master")
+        print("Collection: " + collectionId + " is a bucket master");
       }
       return true;
     } else {
@@ -481,7 +480,7 @@ exports.run = function (extra, args) {
     // Single shard collections
     let amount = 0;
     _.each(collections, function (collection) {
-      amount += calculateAmountOfCollectionShards(collection.collectionId, collection.database, true)
+      amount += calculateAmountOfCollectionShards(collection.collectionId, collection.database, true);
     });
     return amount;
   };
@@ -567,7 +566,7 @@ exports.run = function (extra, args) {
       return {
         success: success,
         data: null
-      }
+      };
     }
 
     if (fromDBServer === toDBServer) {
@@ -578,7 +577,7 @@ exports.run = function (extra, args) {
       return {
         success: success,
         data: null
-      }
+      };
     }
 
     // modifiy local state
@@ -637,7 +636,7 @@ exports.run = function (extra, args) {
     return {
       success: success,
       data: analysisData
-    }
+    };
   };
 
   // this function will move shards locally around and then return a new state
@@ -695,7 +694,7 @@ exports.run = function (extra, args) {
                     amountOfLeadersToMove--;
                   } else {
                     if (debug) {
-                      print("Could not move leader shard.")
+                      print("Could not move leader shard.");
                     }
                   }
                 }
@@ -713,7 +712,7 @@ exports.run = function (extra, args) {
                       amountOfFollowersToMove--;
                     } else {
                       if (debug) {
-                        print("Could not move follower shard.")
+                        print("Could not move follower shard.");
                       }
                     }
                   }
@@ -737,7 +736,7 @@ exports.run = function (extra, args) {
       if (bestAmount > perfectAmount) {
         let totalAmountToMove = bestAmount - perfectAmount;
 	if (totalAmountToMove > perfectAmount) {
-          totalAmountToMove = perfectAmount
+          totalAmountToMove = perfectAmount;
         }
 
         let toIterate;
@@ -1104,7 +1103,7 @@ exports.run = function (extra, args) {
 
     if (oldJobHistoryLenght === jobHistory.length && jobHistory.length !== 0) {
       // we did not find any new possible optimizations.
-      print("Done. No more optimizations could be added.")
+      print("Done. No more optimizations could be added.");
       break;
     }
     oldJobHistoryLenght = jobHistory.length;
@@ -1148,7 +1147,7 @@ exports.run = function (extra, args) {
     print("optimization iteration.");
     print("  -> Use the agency leader endpoint");
   } else {
-    print("No optimizations are available. Exiting.")
+    print("No optimizations are available. Exiting.");
   }
 
   print("");

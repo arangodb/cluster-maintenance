@@ -1,8 +1,8 @@
 /* jshint globalstrict:false, strict:false, sub: true */
 /* global print */
 exports.name = "remove-skeleton-databases";
-exports.group= "cleanup tasks";
-exports.args = [ 
+exports.group = "cleanup tasks";
+exports.args = [
   {
     "name": "remove-skeleton-database-file",
     "optional": false,
@@ -18,7 +18,7 @@ exports.info = `
 Removes skeleton databases.
 `;
 
-exports.run = function(extra, args) {
+exports.run = function (extra, args) {
 
   // imports
   const fs = require('fs');
@@ -27,7 +27,7 @@ exports.run = function(extra, args) {
 
   let skeletons = helper.getValue("remove-skeleton-database-file", args);
 
-  _.each(skeletons, function(skeleton) {
+  _.each(skeletons, function (skeleton) {
     if (skeleton.database.length > 0) {
       print("removing skeleton database: " + skeleton.database);
 
