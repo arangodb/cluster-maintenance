@@ -8,6 +8,12 @@ exports.args = [
     "optional": false,
     "type": "jsonfile",
     "description": "json file created by analyze task"
+  },
+  {
+    "name": "type",
+    "optional": false,
+    "type": "string",
+    "description": "'enterprise' or 'community'"
   }
 ];
 exports.args_arangosh = " --server.endpoint AGENT-OR-COORDINATOR";
@@ -23,6 +29,11 @@ exports.run = function (extra, args) {
   // imports
   const helper = require('../helper.js');
   let collections = helper.getValue("repair-sharding-strategy-file", args);
+  let type = helper.getValue("type", args);
+
+  if (type !== "enterprise" && type !== "community") {
+    helper.fatal("type must be 'enterprise' or 'community', got '" + type + "'");
+  }
 
   let ns = {};
   let os = {};
@@ -33,7 +44,15 @@ exports.run = function (extra, args) {
     let namePath = "arango/Plan/Collections/" + collection.database + "/" +
         collection.cid + "/name";
 
-    ns[path] = collection.newStrategy;
+    let strategy = collection.newStrategy;
+
+    if (type === "community") {
+      if (strategy === "enterprise-compat") {
+        strategy = "community-compat";
+      }
+    }
+
+    ns[path] = strategy;
     os[path] = {oldEmpty: true};
     os[namePath] = collection.name;
   });
