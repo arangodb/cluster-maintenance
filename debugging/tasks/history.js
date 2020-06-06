@@ -11,7 +11,7 @@ exports.args = [
 exports.args_arangosh = " --server.endpoint COORDINATOR";
 exports.description = "Get agency-history from an agent.";
 exports.selfTests = ["arango", "db", "coordinatorConnection"];
-exports.requires = "3.3.23 - 3.7.99";
+exports.requires = "3.4.6 - 3.7.99";
 exports.info = `
 Get agency-history from an coordinator.
 `;

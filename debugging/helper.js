@@ -81,6 +81,28 @@ const getRole = () => {
 const checkRole = (role_) => {
   const role = getRole();
   if (role === undefined) {
+    if (role_ === "AGENT") {
+      const url = '/_api/agency/read';
+      const response = httpWrapper('POST_RAW', url, [["/"]]);
+
+      if (response.code === 404 || response.code === 501) {
+        return false;
+      }
+
+      return true;
+    }
+
+    if (role_ === "COORDINATOR") {
+      const url = '/_api/cluster/endpoints';
+      const response = httpWrapper('GET_RAW', url, [["/"]]);
+
+      if (response.code === 403) {
+        return false;
+      }
+
+      return true;
+    }
+
     print("WARNING: unable to determine server role. " +
           "You can ignore this warning if the script is executed against a " +
           role_ + ".");
@@ -204,15 +226,26 @@ const findAgencyFromCoordinator = () => {
 };
 
 const switchToAgencyLeader = () => {
-  if (checkRole("COORDINATOR")) {
-    findAgencyFromCoordinator();
+  const url = '/_api/agency/read';
+
+  if (getRole() === undefined) {
+    // old version, do some test
+    const response = httpWrapper('POST_RAW', url, [["/"]]);
+
+    if (response.code === 404 || response.code === 501) {
+      fatal("ERROR: need to be connected to an agent");
+    }
+  } else {
+    if (checkRole("COORDINATOR")) {
+      findAgencyFromCoordinator();
+    }
+
+    if (!checkRole("AGENT")) {
+      fatal("Script needs a connection to an agent. " +
+            "Currently connected to a " + getRole() + ".");
+    }
   }
 
-  if (!checkRole("AGENT")) {
-    fatal("Script needs a connection to an agent. " +
-          "Currently connected to a " + getRole() + ".");
-  }
-  const url = '/_api/agency/read';
   let response = httpWrapper('POST_RAW', url, [["/"]]);
   if (response.code === 307) {
     const location = response.headers.location;
@@ -238,7 +271,11 @@ const getAgencyHistoryFromCoordinator = () => {
   checkCoordinator();
   let response = httpWrapper('GET', "/_api/cluster/agency-dump");
   if (response.error) {
-    fatal("Got error while while gettign agency history: " +
+    if (response.code === 403 && response.errorNum === 11) {
+      fatal("History is not supported by this version");
+    }
+
+    fatal("Got error while while getting agency history: " +
           response.errorMessage);
   }
   return response;
@@ -366,7 +403,6 @@ const checkArgs = (task, args) => {
 
 const checkGlobalArgs = (args) => {
   const options = {
-    findLeader: false
   };
 
   let l = args.length;
@@ -376,7 +412,7 @@ const checkGlobalArgs = (args) => {
     let found = 0;
 
     if (name === '--find-leader') {
-      options.findLeader = true;
+      print("INFO: `--find-leader` is no longer necessary");
       found = 1;
     }
 
