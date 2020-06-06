@@ -865,6 +865,62 @@ exports.run = function (extra, args) {
     }
   };
 
+  const extractShardingStrategy = (info, dump) => {
+    const planCollections = dump.arango.Plan.Collections;
+    const planDBs = dump.arango.Plan.Databases;
+    info.shardingStrategy = [];
+    for (const [db, collections] of Object.entries(planCollections)) {
+      if (!planDBs.hasOwnProperty(db)) {
+        // This database has Collections but is deleted.
+        info.noPlanDatabases.push(db, collections);
+        continue;
+      }
+      for (const [cid, col] of Object.entries(collections)) {
+        const { name, type, shardingStrategy, isSmart } = col;
+        if (shardingStrategy) {
+          continue;
+        }
+        let newStrategy;
+        if (type === 2 || !isSmart) {
+          newStrategy = "enterprise-compat";
+        } else if (type === 3 && isSmart) {
+          newStrategy = "enterprise-smart-edge-compat";
+        }
+        if (!newStrategy) {
+          continue;
+        }
+        info.shardingStrategy.push({
+          database: db,
+          cid: cid,
+          name: name,
+          newStrategy: newStrategy
+        });
+      }
+    }
+  };
+
+  const printShardingStrategy = (info) => {
+    const { shardingStrategy } = info;
+    if (shardingStrategy.length > 0) {
+      printBad('Your cluster has sharding strategies that need fixing');
+      return true;
+    } else {
+      printGood('Your cluster does correct sharding strategies');
+      return false;
+    }
+  };
+
+  const saveShardingStrategy = function (info) {
+    const { shardingStrategy } = info;
+    if (shardingStrategy.length > 0) {
+      fs.write("sharding-strategy.json", JSON.stringify(shardingStrategy));
+      print("To remedy the sharding-strategy issue please run the task " +
+            "`repair-sharding-strategy` AGAINST AN AGENT, e.g.:");
+      print(` ./debugging/index.js <options> repair-sharding-strategy ${fs.makeAbsolute('sharding-strategy.json')}`);
+      print();
+    }
+  };
+
   const info = {};
 
   if (stores !== undefined) {
@@ -884,6 +940,7 @@ exports.run = function (extra, args) {
   extractOutOfSyncFollowers(info, dump);
   extractCleanedFailoverCandidates(info, dump);
   extractBrokenEdgeIndexes(info, dump);
+  extractShardingStrategy(info, dump);
 
   let infected = false;
 
@@ -908,6 +965,7 @@ exports.run = function (extra, args) {
   infected = printOutOfSyncFollowers(info) || infected;
   infected = printDistributionGroups(info) || infected;
   infected = printBrokenEdgeIndexes(info) || infected;
+  infected = printShardingStrategy(info) || infected;
   print();
 
   if (infected) {
@@ -921,6 +979,7 @@ exports.run = function (extra, args) {
     saveMissingCollections(info);
     saveCleanedFailoverCandidates(info);
     saveBrokenEdgeIndexes(info);
+    saveShardingStrategy(info);
   } else {
     printGood('Did not detect any issues in your cluster');
   }
