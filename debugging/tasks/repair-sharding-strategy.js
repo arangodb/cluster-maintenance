@@ -30,9 +30,12 @@ exports.run = function (extra, args) {
   collections.forEach(function (collection) {
     let path = "arango/Plan/Collections/" + collection.database + "/" +
         collection.cid + "/shardingStrategy";
+    let namePath = "arango/Plan/Collections/" + collection.database + "/" +
+        collection.cid + "/name";
 
     ns[path] = collection.newStrategy;
     os[path] = {oldEmpty: true};
+    os[path] = collection.name;
   });
 
   ns["arango/Plan/Version"] = {op: "increment"};
