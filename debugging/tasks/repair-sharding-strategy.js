@@ -35,7 +35,7 @@ exports.run = function (extra, args) {
 
     ns[path] = collection.newStrategy;
     os[path] = {oldEmpty: true};
-    os[path] = collection.name;
+    os[namePath] = collection.name;
   });
 
   ns["arango/Plan/Version"] = {op: "increment"};
