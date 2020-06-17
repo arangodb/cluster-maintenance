@@ -98,7 +98,7 @@ exports.run = function (extra, args) {
 
         _.each(servers, function (server) {
           const s = health[server];
-	  if (s) {
+          if (s) {
             const status = s.Status;
             const ip = s.Endpoint;
             const shortName = s.ShortName;
@@ -113,7 +113,7 @@ exports.run = function (extra, args) {
             serverMap[server].push(sinfo);
           } else {
             print("INFO ignoring server '" + server + "'");
-	  }
+          }
         });
       });
     });
