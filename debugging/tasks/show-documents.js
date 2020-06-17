@@ -98,18 +98,22 @@ exports.run = function (extra, args) {
 
         _.each(servers, function (server) {
           const s = health[server];
-          const status = s.Status;
-          const ip = s.Endpoint;
-          const shortName = s.ShortName;
-          const sinfo = {server, status, ip, dbname, cid, cname, shard, shortName};
-          info[dbname][cname][shard].push(sinfo);
+	  if (s) {
+            const status = s.Status;
+            const ip = s.Endpoint;
+            const shortName = s.ShortName;
+            const sinfo = {server, status, ip, dbname, cid, cname, shard, shortName};
+            info[dbname][cname][shard].push(sinfo);
 
-          if (!serverMap.hasOwnProperty(server)) {
-            serverMap[server] = [];
-            serverCount[server] = { num: ++scount, shortName, ip };
-          }
+            if (!serverMap.hasOwnProperty(server)) {
+              serverMap[server] = [];
+              serverCount[server] = { num: ++scount, shortName, ip };
+            }
 
-          serverMap[server].push(sinfo);
+            serverMap[server].push(sinfo);
+          } else {
+            print("INFO ignoring server '" + server + "'");
+	  }
         });
       });
     });
@@ -125,18 +129,20 @@ exports.run = function (extra, args) {
       db._useDatabase(entry.dbname);
       const collection = db._collection(entry.shard);
 
-      if (type === 'count') {
-        const count = collection.count();
-        entry.count = count;
-      } else if (type === 'size') {
-        const count = collection.figures().documentsSize;
-        entry.count = count;
-      } else if (type === 'indexes') {
-        const count = collection.figures().indexes.size;
-        entry.count = count;
-      } else if (type === 'total') {
-        const count = collection.figures().documentsSize + collection.figures().indexes.size;
-        entry.count = count;
+      if (collection) {
+        if (type === 'count') {
+          const count = collection.count();
+          entry.count = count;
+        } else if (type === 'size') {
+          const count = collection.figures().documentsSize;
+          entry.count = count;
+        } else if (type === 'indexes') {
+          const count = collection.figures().indexes.size;
+          entry.count = count;
+        } else if (type === 'total') {
+          const count = collection.figures().documentsSize + collection.figures().indexes.size;
+          entry.count = count;
+        }
       }
     });
   });
