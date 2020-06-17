@@ -1,3 +1,21 @@
+v1.0.3 (2020-06-05)
+-------------------
+
+* added fix for sharding strategy
+
+
+v1.0.2 (2020-06-05)
+-------------------
+
+* fix for older versions
+
+
+v1.0.1 (2020-06-05)
+-------------------
+
+* added Makefile to generate distribution archive
+
+
 v1.0.0 (2020-06-05)
 -------------------
 
