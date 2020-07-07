@@ -1,4 +1,3 @@
-
 $arangosh='arangosh.exe'
 if (Test-Path 'Env:ARANGOSH') {
   $arangosh=$Env:ARANGOSH
