@@ -92,6 +92,29 @@ exports.run = function (extra, args) {
     }
 
   };
+  
+  const zombieAnalyzerRevisions = (info, dump) => {
+    let plannedRevisions = dump.arango.Plan.Analyzers;
+    let plannedDatabases = dump.arango.Plan.Databases;
+
+    let zombies = [];
+    if (plannedRevisions !== undefined) {
+      _.each(Object.keys(plannedRevisions), function (id) {
+        if (!plannedDatabases.hasOwnProperty(id)) {
+          zombies.push(id);
+        }
+      });
+    }
+
+    info.zombieAnalyzerRevisions = zombies;
+    if (zombies.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
+
+  };
+
 
   const printPrimaries = function (info) {
     let table = new AsciiTable('Primaries');
@@ -111,6 +134,17 @@ exports.run = function (extra, args) {
       return false;
     } else {
       printBad('Your cluster has zombie coordinators');
+      return true;
+    }
+  };
+  
+  const printZombieAnalyzerRevisions = function (info) {
+    let haveZombies = info.zombieAnalyzerRevisions.length > 0;
+    if (!haveZombies) {
+      printGood('Your cluster does not have any zombie analyzer revisions');
+      return false;
+    } else {
+      printBad('Your cluster has zombie analyzer revisions');
       return true;
     }
   };
@@ -520,6 +554,15 @@ exports.run = function (extra, args) {
       print();
     }
   };
+  
+  const saveZombieAnalyzerRevisions = function (info) {
+    if (info.zombieAnalyzerRevisions.length > 0) {
+      fs.write("zombie-analyzer-revisions.json", JSON.stringify(info.zombieAnalyzerRevisions));
+      print("To remedy the zombie analyzer revisions issue please run the task `remove-zombie-analyzer-revisions` against the leader AGENT, e.g.:");
+      print(` ./debugging/index.js <options> remove-zombie-analyzer-revisions ${fs.makeAbsolute('zombie-analyzer-revisions.json')}`);
+      print();
+    }
+  }
 
   const saveCleanedFailoverCandidates = function (info) {
     if (Object.keys(info.correctFailoverCandidates).length > 0) {
@@ -932,6 +975,7 @@ exports.run = function (extra, args) {
   helper.extractPrimaries(info, dump);
   helper.extractDatabases(info, dump);
   zombieCoordinators(info, dump);
+  zombieAnalyzerRevisions(info, dump);
   extractCollectionIntegrity(info, dump);
   extractCurrentDatabasesDeadPrimaries(info, dump);
   extractDistributionGroups(info, dump);
@@ -956,6 +1000,7 @@ exports.run = function (extra, args) {
 
   infected = printZombies(info) || infected;
   infected = printZombieCoordinators(info) || infected;
+  infected = printZombieAnalyzerRevisions(info) || infected;
   infected = printCleanedFailoverCandidates(info) || infected;
   infected = printBroken(info) || infected;
   infected = printCollectionIntegrity(info) || infected;
@@ -973,6 +1018,7 @@ exports.run = function (extra, args) {
     saveCollectionIntegrity(info);
     saveZombies(info);
     saveZombieCoords(info);
+    saveZombieAnalyzerRevisions(info);
     saveCurrentDatabasesDeadPrimaries(info);
     saveDistributionGroups(info);
     saveEmptyDatabases(info);
