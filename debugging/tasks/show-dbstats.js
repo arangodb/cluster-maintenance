@@ -26,19 +26,24 @@ exports.run = function (extra, args) {
 
   _.each(conf.arango.Current.Collections, function (val, dbname) {
     _.each(val, function (val, cid) {
-      const cname = shardMap[dbname][cid].name;
-      _.each(val, function (val, shard) {
-        const servers = val.servers;
-        _.each(servers, function (server) {
-          const s = health[server];
-          const status = s.Status;
-          const ip = s.Endpoint;
+      const c = shardMap[dbname][cid];
+      if (c) {
+        const cname = c.name;
+        _.each(val, function (val, shard) {
+          const servers = val.servers;
+          _.each(servers, function (server) {
+            const s = health[server];
+            const status = s.Status;
+            const ip = s.Endpoint;
 
-          serverMap[server] = {
-            server, status, ip, dbname, cid, cname, shard
-          };
+            serverMap[server] = {
+              server, status, ip, dbname, cid, cname, shard
+            };
+          });
         });
-      });
+      } else {
+        print("INFO ignoring unplanned collection '" + dbname + "/" + cid + "'");
+      }
     });
   });
 
