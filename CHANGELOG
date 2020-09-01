@@ -3,6 +3,8 @@ v1.0.x (XXXX-XX-XX)
 
 * added safety check for show-dbstats
 
+* added dockerfile
+
 
 v1.0.3 (2020-06-05)
 -------------------

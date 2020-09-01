@@ -23,7 +23,7 @@ version:
 
 dist:
 	@mkdir -p work
-	$(MAKE) targz V=`git describe --all --tags --long --dirty=-dirty | sed -e 's:tags/::'`
+	$(MAKE) targz V=`git describe --all --tags --long --dirty=-dirty | sed -e 's:tags/::' | sed -e 's:/:_:g'`
 
 targz:
 	@echo "generating archive for $V"
@@ -34,4 +34,6 @@ targz:
 		`find debugging -name "*.js"` \
 		 | tar -C work/debug-scripts-$V -x -f -
 	@tar -c -z -f work/debug-scripts-$V.tar.gz -C work debug-scripts-$V
-	@rm -rf work/debug-scripts-$V
+	@mv work/debug-scripts-$V work/debug-scripts
+	@tar -c -z -f work/debug-scripts.tar.gz -C work debug-scripts
+	@rm -rf work/debug-scripts
