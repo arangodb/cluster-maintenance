@@ -49,26 +49,33 @@ exports.run = function (extra, args, cleanout) {
   // cleanout server
   const data = {server: shortName};
   let res;
+  let task = "unknown";
 
   if (cleanout) {
+    print("Starting cleanOutServer");
     res = helper.httpWrapper('POST', '/_admin/cluster/cleanOutServer', data);
+    task = "cleanout";
   } else {
+    print("Starting resignLeadership");
     res = helper.httpWrapper('POST', '/_admin/cluster/resignLeadership', data);
+    task = "resign";
   }
 
   if (res.code !== 202) {
-    helper.fatal("cleanout failed: ", JSON.stringify(res));
+    helper.fatal(task + " failed: ", JSON.stringify(res));
   }
 
   const jobId = res.id;
 
   const dblist = db._databases();
-  const sleep = 10;
+  const sleep = 60;
 
   print("INFO checking shard distribution every " + sleep + " seconds...");
 
   let count;
   let leaderOnly;
+  let t1 = new Date();
+
   do {
     count = 0;
     leaderOnly = 0;
@@ -77,7 +84,7 @@ exports.run = function (extra, args, cleanout) {
 
     if (res.status === 'Failed') {
       printBad(res.job.reason);
-      helper.fatal("cannot clean out server: " + res.job.reason);
+      helper.fatal("cannot " + task + " server: " + res.job.reason);
     }
 
     for (let dbase in dblist) {
@@ -109,19 +116,33 @@ exports.run = function (extra, args, cleanout) {
       }
     }
 
+    const t2 = new Date();
+    print("INFO " + (t2));
+
     if (cleanout) {
-      print("INFO shards to be moved away from node " + shortName + ": " + count);
+      print("INFO " + task + ": shards to be moved away from node " + shortName + ": " + count);
       if (count === 0) break;
     } else {
-      print("INFO shards to be moved away from node " + shortName + ": " + count + ", leader-only: " + leaderOnly);
+      print("INFO " + task + ": shards to be moved away from node " + shortName + ": " + count +
+            ", leader-only: " + leaderOnly);
       if (count === leaderOnly) break;
     }
-    internal.wait(sleep);
+
+    const d = (t2 - t1) / 1000;
+    t1 = t2;
+
+    if (d < sleep) {
+      internal.wait(sleep - d);
+    }
   } while (count > 0);
 
   while (res.status === 'ToDo') {
     res = helper.httpWrapper('GET', '/_admin/cluster/queryAgencyJob?id=' + jobId);
+
+    const t2 = new Date();
+    print("INFO " + (t2));
     print("INFO waiting for job to finished");
-    internal.wait(sleep);
+
+    internal.wait(sleep / 10);
   }
 };
