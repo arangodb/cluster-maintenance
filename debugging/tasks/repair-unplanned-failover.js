@@ -41,7 +41,6 @@ exports.run = function (extra, args) {
   ns["arango/Plan/Version"] = {op: "increment"};
 
   let trx = [ ns, os ];
-  print(trx);
 
   let res = helper.httpWrapper('POST', '/_api/agency/write', [trx]);
   print(res);
