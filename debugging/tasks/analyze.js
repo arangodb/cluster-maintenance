@@ -492,7 +492,8 @@ exports.run = function (extra, args) {
           });
   
           if (candidates.length !== plannedCandidates.length) {
-              fixes.push({dbname, cid, cname, shname, old: candidates, correct: plannedCandidates });
+              fixes.push({dbname, cid, cname, shname, old: candidates, correct: plannedCandidates,
+			  plan: planned});
           }
         });
       });
