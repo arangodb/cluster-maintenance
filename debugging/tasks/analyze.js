@@ -474,6 +474,61 @@ exports.run = function (extra, args) {
     }
   };
 
+  const extractUnplannedFailoverCandidates = (info, dump) => {
+    const planCollections = dump.arango.Plan.Collections;
+    const currentCollections = dump.arango.Current.Collections;
+    const fixes = [];
+    Object.keys(currentCollections).forEach(function (dbname) {
+      const database = dump.arango.Current.Collections[dbname];
+      Object.keys(database).forEach(function (cid) {
+        const collection = database[cid];
+        Object.keys(collection).forEach(function (shname) {
+          const shard = collection[shname];
+          const candidates = shard.failoverCandidates;
+          const planned = planCollections[dbname][cid].shards[shname];
+          const cname = planCollections[dbname][cid].name;
+          const plannedCandidates = candidates.filter(function (c) {
+            return _.indexOf(planned, c) >= 0;
+          });
+  
+          if (candidates.length !== plannedCandidates.length) {
+              fixes.push({dbname, cid, cname, shname, old: candidates, correct: plannedCandidates });
+          }
+        });
+      });
+    });
+    info.unplannedFailoverCandidates = fixes;
+  };
+
+  const printUnplannedFailoverCandidates = (info, dump) => {
+    if (info.unplannedFailoverCandidates.length === 0) {
+      printGood('Your cluster does not have any unplanned failover candidates');
+      return false;
+    }
+
+    printBad('Your cluster has some unplanned failover candidates');
+
+    let table = new AsciiTable('Unplanned Failover Candidates');
+      table.setHeading('Database', 'Collections','Shard');
+
+    _.each(info.unplannedFailoverCandidates, function(fix) {
+      table.addRow(fix.dbname, fix.cname, fix.shname);
+    });
+
+    print(table.toString());
+    return true;
+  };
+
+  const saveUnplannedFailoverCandidates = (info, dump) => {
+    if (info.unplannedFailoverCandidates.length > 0) {
+      fs.write("unplanned-failover.json", JSON.stringify(info.unplannedFailoverCandidates));
+      print("To remedy the unplanned failover candidates please run the task " +
+            "`repair-unplanned-failover` AGAINST AN AGENT, e.g.:");
+      print(` ./debugging/index.js <options> repair-unplanned-failover ${fs.makeAbsolute('unplanned-failover.json')}`);
+      print();
+    }	
+  };
+
   const printDatabases = function (info) {
     let table = new AsciiTable('Databases');
     table.setHeading('', 'collections', 'shards', 'leaders', 'followers', 'Real-Leaders');
@@ -985,6 +1040,7 @@ exports.run = function (extra, args) {
   extractCleanedFailoverCandidates(info, dump);
   extractBrokenEdgeIndexes(info, dump);
   extractShardingStrategy(info, dump);
+  extractUnplannedFailoverCandidates(info, dump);
 
   let infected = false;
 
@@ -1011,6 +1067,7 @@ exports.run = function (extra, args) {
   infected = printDistributionGroups(info) || infected;
   infected = printBrokenEdgeIndexes(info) || infected;
   infected = printShardingStrategy(info) || infected;
+  infected = printUnplannedFailoverCandidates(info) || infected;
   print();
 
   if (infected) {
@@ -1026,6 +1083,7 @@ exports.run = function (extra, args) {
     saveCleanedFailoverCandidates(info);
     saveBrokenEdgeIndexes(info);
     saveShardingStrategy(info);
+    saveUnplannedFailoverCandidates(info);
   } else {
     printGood('Did not detect any issues in your cluster');
   }
