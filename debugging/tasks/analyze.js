@@ -125,6 +125,7 @@ exports.run = function (extra, args) {
     });
 
     print(table.toString());
+    return false;
   };
 
   const printZombieCoordinators = function (info) {
@@ -548,8 +549,22 @@ exports.run = function (extra, args) {
     let table = new AsciiTable('collections');
     table.setHeading('', 'CID', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
 
+    const rfs = {};
+
+    _.each(info.collections, function (collection, name) {
+      if (!collection.distrbuteShardsLike) {
+        rfs[collection.id] = collection.replicationFactor;
+      }
+    });
+
     _.each(_.sortBy(info.collections, x => x.fullName), function (collection, name) {
-      table.addRow(collection.fullName, collection.id, collection.replicationFactor,
+      let rf = collection.replicationFactor;
+
+      if (collection.distributeShardsLike) {
+        rf = "[" + rfs[collection.distributeShardsLike] + "]";
+      }
+
+      table.addRow(collection.fullName, collection.id, rf,
         collection.distributeShardsLike, collection.numberOfShards,
         collection.type, collection.isSmart);
     });
@@ -1040,7 +1055,7 @@ exports.run = function (extra, args) {
   extractOutOfSyncFollowers(info, dump);
   extractCleanedFailoverCandidates(info, dump);
   extractBrokenEdgeIndexes(info, dump);
-  extractShardingStrategy(info, dump);
+  // extractShardingStrategy(info, dump);
   extractUnplannedFailoverCandidates(info, dump);
 
   let infected = false;
@@ -1067,7 +1082,7 @@ exports.run = function (extra, args) {
   infected = printOutOfSyncFollowers(info) || infected;
   infected = printDistributionGroups(info) || infected;
   infected = printBrokenEdgeIndexes(info) || infected;
-  infected = printShardingStrategy(info) || infected;
+  // infected = printShardingStrategy(info) || infected;
   infected = printUnplannedFailoverCandidates(info) || infected;
   print();
 
@@ -1083,7 +1098,7 @@ exports.run = function (extra, args) {
     saveMissingCollections(info);
     saveCleanedFailoverCandidates(info);
     saveBrokenEdgeIndexes(info);
-    saveShardingStrategy(info);
+    // saveShardingStrategy(info);
     saveUnplannedFailoverCandidates(info);
   } else {
     printGood('Did not detect any issues in your cluster');

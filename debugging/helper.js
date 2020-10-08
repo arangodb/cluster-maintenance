@@ -456,6 +456,7 @@ const extractDatabases = function (info, dump) {
   info.shardsPrimary = {};
   info.zombies = [];
   info.broken = [];
+  info.obsoleteCollections = [];
 
   const allCollections = dump.arango.Plan.Collections;
 
@@ -490,7 +491,16 @@ const extractDatabases = function (info, dump) {
         };
 
         database.collections.push(coll);
-        info.collections[full] = coll;
+
+        if (_.has(info.collections, full)) {
+          info.obsoleteCollections.push(full);
+
+          if (info.collections[full].id > coll.id) {
+            info.collections[full] = coll;
+          }
+        } else {
+          info.collections[full] = coll;
+        }
 
         coll.shards = [];
         coll.leaders = [];
