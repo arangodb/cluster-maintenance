@@ -1,3 +1,11 @@
+v1.0.5 (2020-10-XX)
+-------------------
+
+* removed obsolete collections from output
+
+* RF for follower collections is now displayed correctly
+
+
 v1.0.4 (2020-08-01)
 -------------------
 
