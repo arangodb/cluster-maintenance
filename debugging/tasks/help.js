@@ -2,7 +2,7 @@
 /* global print */
 exports.name = "help";
 exports.group = "standalone tasks";
-exports.args = [ { "name": "task-name", "optional": true, "type": "string" } ];
+exports.args = [{name: "task-name", optional: true, type: "string"}];
 exports.description = "Shows this help.";
 exports.requires = "3.3.23 - 4.99.99";
 exports.selfTests = [];
@@ -39,7 +39,7 @@ exports.run = function (extra, args) {
     print("   Help Usage: " + global.__filename + " help <taskname>");
     let lastGroup;
     Object.keys(tasks).forEach(function (key) {
-      let currentGroup = tasks[key].group;
+      const currentGroup = tasks[key].group;
       if (currentGroup !== lastGroup) {
         lastGroup = currentGroup;
         print();

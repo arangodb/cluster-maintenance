@@ -4,10 +4,10 @@ exports.name = "analyze";
 exports.group = "analyze tasks";
 exports.args = [
   {
-    "name": "agency-dump",
-    "optional": true,
-    "type": "jsonfile",
-    "description": "agency dump"
+    name: "agency-dump",
+    optional: true,
+    type: "jsonfile",
+    description: "agency dump"
   }
 ];
 exports.args_arangosh = "| --server.endpoint AGENT-OR-COORDINATOR";
@@ -31,12 +31,12 @@ exports.run = function (extra, args) {
   const printBad = helper.printBad;
 
   const parsedFile = helper.getValue("agency-dump", args);
-  let response = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
-  let dump = response[0];
-  let stores = response[1];
+  const response = helper.getAgencyDumpFromObjectOrAgency(parsedFile);
+  const dump = response[0];
+  const stores = response[1];
 
   const extractFailed = (info, dump) => {
-    let failedInstanceEndpoints = [];
+    const failedInstanceEndpoints = [];
     const health = dump.arango.Supervision.Health;
     _.each(health, function (server, key) {
       if (server.Status === 'FAILED') {
@@ -53,12 +53,12 @@ exports.run = function (extra, args) {
   };
 
   const saveZombieCallbacks = function (info) {
-    let zombieCallbacks = [];
+    const zombieCallbacks = [];
     if (info.failedInstances.length > 0 && info.callbacks !== undefined) {
       Array.prototype.forEach.call(info.callbacks, callback => {
-        let url = Object.keys(callback)[0];
-        let fs = url.indexOf("/");
-        let end = url.indexOf("/", fs + 2);
+        const url = Object.keys(callback)[0];
+        const fs = url.indexOf("/");
+        const end = url.indexOf("/", fs + 2);
         if (info.failedInstances.includes(url.slice(0, end))) {
           zombieCallbacks.push(callback);
         }
@@ -73,13 +73,12 @@ exports.run = function (extra, args) {
   };
 
   const zombieCoordinators = (info, dump) => {
-    let plannedCoords = dump.arango.Plan.Coordinators;
-    let currentCoords = dump.arango.Current.Coordinators;
-
-    let zombies = [];
+    const plannedCoords = dump.arango.Plan.Coordinators;
+    const currentCoords = dump.arango.Current.Coordinators;
+    const zombies = [];
 
     _.each(Object.keys(currentCoords), function (id) {
-      if (!plannedCoords.hasOwnProperty(id)) {
+      if (!_.has(plannedCoords, id)) {
         zombies.push(id);
       }
     });
@@ -92,15 +91,15 @@ exports.run = function (extra, args) {
     }
 
   };
-  
-  const zombieAnalyzerRevisions = (info, dump) => {
-    let plannedRevisions = dump.arango.Plan.Analyzers;
-    let plannedDatabases = dump.arango.Plan.Databases;
 
-    let zombies = [];
+  const zombieAnalyzerRevisions = (info, dump) => {
+    const plannedRevisions = dump.arango.Plan.Analyzers;
+    const plannedDatabases = dump.arango.Plan.Databases;
+    const zombies = [];
+
     if (plannedRevisions !== undefined) {
       _.each(Object.keys(plannedRevisions), function (id) {
-        if (!plannedDatabases.hasOwnProperty(id)) {
+        if (!_.has(plannedDatabases, id)) {
           zombies.push(id);
         }
       });
@@ -115,9 +114,8 @@ exports.run = function (extra, args) {
 
   };
 
-
   const printPrimaries = function (info) {
-    let table = new AsciiTable('Primaries');
+    const table = new AsciiTable('Primaries');
     table.setHeading('', 'status');
 
     _.each(info.primariesAll, function (server, name) {
@@ -129,7 +127,7 @@ exports.run = function (extra, args) {
   };
 
   const printZombieCoordinators = function (info) {
-    let haveZombies = info.zombieCoordinators.length > 0;
+    const haveZombies = info.zombieCoordinators.length > 0;
     if (!haveZombies) {
       printGood('Your cluster does not have any zombie coordinators');
       return false;
@@ -138,9 +136,9 @@ exports.run = function (extra, args) {
       return true;
     }
   };
-  
+
   const printZombieAnalyzerRevisions = function (info) {
-    let haveZombies = info.zombieAnalyzerRevisions.length > 0;
+    const haveZombies = info.zombieAnalyzerRevisions.length > 0;
     if (!haveZombies) {
       printGood('Your cluster does not have any zombie analyzer revisions');
       return false;
@@ -151,7 +149,7 @@ exports.run = function (extra, args) {
   };
 
   const printCleanedFailoverCandidates = function (info) {
-    let haveCleanedFailovers = (Object.keys(info.correctFailoverCandidates > 0).length);
+    const haveCleanedFailovers = (Object.keys(info.correctFailoverCandidates > 0).length);
     if (!haveCleanedFailovers) {
       printGood('Your cluster does not have any cleaned servers for failover');
       return false;
@@ -164,7 +162,7 @@ exports.run = function (extra, args) {
   const recursiveMapPrinter = (map) => {
     if (map instanceof Map) {
       const res = {};
-      for (let [k, v] of map) {
+      for (const [k, v] of map) {
         res[k] = recursiveMapPrinter(v);
       }
       return res;
@@ -172,13 +170,13 @@ exports.run = function (extra, args) {
       return map.map(v => recursiveMapPrinter(v));
     } else if (map instanceof Object) {
       const res = {};
-      for (let [k, v] of Object.entries(map)) {
+      for (const [k, v] of Object.entries(map)) {
         res[k] = recursiveMapPrinter(v);
       }
       return res;
     } else if (map instanceof Set) {
       const res = [];
-      for (let v of map.values()) {
+      for (const v of map.values()) {
         res.push(recursiveMapPrinter(v));
       }
       return res;
@@ -195,31 +193,31 @@ exports.run = function (extra, args) {
     info.leaderOnDeadServer = [];
     info.followerOnDeadServer = [];
     for (const [db, collections] of Object.entries(planCollections)) {
-      if (!planDBs.hasOwnProperty(db)) {
+      if (!_.has(planDBs, db)) {
         // This database has Collections but is deleted.
         info.noPlanDatabases.push(db, collections);
         continue;
       }
       for (const [name, col] of Object.entries(collections)) {
-        const { shards, distributeShardsLike, isSmart } = col;
+        const {shards, distributeShardsLike, isSmart} = col;
         if (!shards || (Object.keys(shards).length === 0 && !isSmart) || shards.constructor !== Object) {
           // We do not have shards
-          info.noShardCollections.push({ db, name, col });
+          info.noShardCollections.push({db, name, col});
           continue;
         }
 
-        if (distributeShardsLike && !collections.hasOwnProperty(distributeShardsLike)) {
+        if (distributeShardsLike && !_.has(collections, distributeShardsLike)) {
           // The prototype is missing
-          info.realLeaderMissing.push({ db, name, distributeShardsLike, col });
+          info.realLeaderMissing.push({db, name, distributeShardsLike, col});
         }
 
         for (const [shard, servers] of Object.entries(shards)) {
           for (let i = 0; i < servers.length; ++i) {
-            if (!info.primaries.hasOwnProperty(servers[i])) {
+            if (!_.has(info.primaries, servers[i])) {
               if (i === 0) {
-                info.leaderOnDeadServer.push({ db, name, shard, server: servers[i], servers });
+                info.leaderOnDeadServer.push({db, name, shard, server: servers[i], servers});
               } else {
-                info.followerOnDeadServer.push({ db, name, shard, server: servers[i], servers });
+                info.followerOnDeadServer.push({db, name, shard, server: servers[i], servers});
               }
             }
           }
@@ -233,8 +231,8 @@ exports.run = function (extra, args) {
     const currentCollections = dump.arango.Current.Collections;
     /*
     * realLeaderCid => {
-    *   plan => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }],
-    *   current => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }],
+    *   plan => cid => [{shard (sorted), servers: [Leader, F1, F2, F3]}],
+    *   current => cid => [{shard (sorted), servers: [Leader, F1, F2, F3]}],
     *   db = dbName
     * }
     */
@@ -249,7 +247,7 @@ exports.run = function (extra, args) {
     const noInsyncAndDeadLeader = new Set();
     for (const [db, collections] of Object.entries(planCollections)) {
       for (const [cid, col] of Object.entries(collections)) {
-        const { shards, distributeShardsLike } = col;
+        const {shards, distributeShardsLike} = col;
         if (!shards || Object.keys(shards).length === 0 || shards.constructor !== Object) {
           // We do not have shards
           continue;
@@ -265,8 +263,8 @@ exports.run = function (extra, args) {
           });
         }
         // Every group is a object of
-        // plan => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }]
-        // current => cid => [{ shard (sorted), servers: [Leader, F1, F2, F3] }]
+        // plan => cid => [{shard (sorted), servers: [Leader, F1, F2, F3]}]
+        // current => cid => [{shard (sorted), servers: [Leader, F1, F2, F3]}]
         const group = shardGroups.get(search);
         const myPlan = [];
         const myCurrent = [];
@@ -280,7 +278,7 @@ exports.run = function (extra, args) {
             }
             if (servers.length > 1 && curServers.length <= 1) {
               noInsyncFollower.add({cid, shard, search});
-              if (!info.primaries.hasOwnProperty(curServers[0])) {
+              if (!_.has(info.primaries, curServers[0])) {
                 noInsyncAndDeadLeader.add({cid, shard, search});
               }
             }
@@ -314,7 +312,7 @@ exports.run = function (extra, args) {
   };
 
   const printDistributionGroups = (info) => {
-    const { noInsyncAndDeadLeader } = info;
+    const {noInsyncAndDeadLeader} = info;
     let infected = false;
     if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
       printBad('Your cluster has collections with dead leader and no insync follower');
@@ -333,7 +331,7 @@ exports.run = function (extra, args) {
   };
 
   const saveDistributionGroups = (info) => {
-    const { noInsyncAndDeadLeader, shardGroups, primaries } = info;
+    const {noInsyncAndDeadLeader, shardGroups, primaries} = info;
     if (noInsyncAndDeadLeader && noInsyncAndDeadLeader.size > 0) {
       const clonedGroups = new Map();
       for (const {cid, shard, search} of noInsyncAndDeadLeader) {
@@ -345,7 +343,7 @@ exports.run = function (extra, args) {
         const shardIndex = myPlan.findIndex(s => s.shard === shard);
         const allShards = [];
         for (const s of myPlan[shardIndex].servers) {
-          if (primaries.hasOwnProperty(s)) {
+          if (_.has(primaries, s)) {
             // This primary is alive, let us check
             candidates.set(s, []);
           }
@@ -491,10 +489,17 @@ exports.run = function (extra, args) {
           const plannedCandidates = candidates.filter(function (c) {
             return _.indexOf(planned, c) >= 0;
           });
-  
+
           if (candidates.length !== plannedCandidates.length) {
-              fixes.push({dbname, cid, cname, shname, old: candidates, correct: plannedCandidates,
-			  plan: planned});
+            fixes.push({
+              dbname,
+              cid,
+              cname,
+              shname,
+              old: candidates,
+              correct: plannedCandidates,
+              plan: planned
+            });
           }
         });
       });
@@ -510,10 +515,10 @@ exports.run = function (extra, args) {
 
     printBad('Your cluster has some unplanned failover candidates');
 
-    let table = new AsciiTable('Unplanned Failover Candidates');
-      table.setHeading('Database', 'Collections','Shard');
+    const table = new AsciiTable('Unplanned Failover Candidates');
+    table.setHeading('Database', 'Collections', 'Shard');
 
-    _.each(info.unplannedFailoverCandidates, function(fix) {
+    _.each(info.unplannedFailoverCandidates, function (fix) {
       table.addRow(fix.dbname, fix.cname, fix.shname);
     });
 
@@ -528,11 +533,11 @@ exports.run = function (extra, args) {
             "`repair-unplanned-failover` AGAINST AN AGENT, e.g.:");
       print(` ./debugging/index.js <options> repair-unplanned-failover ${fs.makeAbsolute('unplanned-failover.json')}`);
       print();
-    }	
+    }
   };
 
   const printDatabases = function (info) {
-    let table = new AsciiTable('Databases');
+    const table = new AsciiTable('Databases');
     table.setHeading('', 'collections', 'shards', 'leaders', 'followers', 'Real-Leaders');
 
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
@@ -546,7 +551,7 @@ exports.run = function (extra, args) {
   };
 
   const printCollections = function (info) {
-    let table = new AsciiTable('collections');
+    const table = new AsciiTable('collections');
     table.setHeading('', 'CID', 'RF', 'Shards Like', 'Shards', 'Type', 'Smart');
 
     const rfs = {};
@@ -573,7 +578,7 @@ exports.run = function (extra, args) {
   };
 
   const printPrimaryShards = function (info) {
-    let table = new AsciiTable('Primary Shards');
+    const table = new AsciiTable('Primary Shards');
     table.setHeading('', 'Leaders', 'Followers', 'Real Leaders');
 
     _.each(info.shardsPrimary, function (shards, dbServer) {
@@ -587,7 +592,7 @@ exports.run = function (extra, args) {
   const printZombies = function (info) {
     if (info.zombies.length > 0) {
       printBad('Your cluster has some zombies');
-      let table = new AsciiTable('Zombies');
+      const table = new AsciiTable('Zombies');
       table.setHeading('Database', 'CID');
 
       _.each(info.zombies, function (zombie) {
@@ -604,10 +609,10 @@ exports.run = function (extra, args) {
 
   const saveZombies = function (info) {
     if (info.zombies.length > 0) {
-      let output = [];
+      const output = [];
 
       _.each(info.zombies, function (zombie) {
-        output.push({ database: zombie.database, cid: zombie.cid, data: zombie.data });
+        output.push({database: zombie.database, cid: zombie.cid, data: zombie.data});
       });
 
       fs.write("zombies.json", JSON.stringify(output));
@@ -625,7 +630,7 @@ exports.run = function (extra, args) {
       print();
     }
   };
-  
+
   const saveZombieAnalyzerRevisions = function (info) {
     if (info.zombieAnalyzerRevisions.length > 0) {
       fs.write("zombie-analyzer-revisions.json", JSON.stringify(info.zombieAnalyzerRevisions));
@@ -633,7 +638,7 @@ exports.run = function (extra, args) {
       print(` ./debugging/index.js <options> remove-zombie-analyzer-revisions ${fs.makeAbsolute('zombie-analyzer-revisions.json')}`);
       print();
     }
-  }
+  };
 
   const saveCleanedFailoverCandidates = function (info) {
     if (Object.keys(info.correctFailoverCandidates).length > 0) {
@@ -647,7 +652,7 @@ exports.run = function (extra, args) {
   const printBroken = function (info) {
     if (info.broken.length > 0) {
       printBad('Your cluster has broken collections');
-      let table = new AsciiTable('Broken');
+      const table = new AsciiTable('Broken');
       table.setHeading('Database', 'CID');
 
       _.each(info.broken, function (zombie) {
@@ -663,11 +668,11 @@ exports.run = function (extra, args) {
   };
 
   const extractCurrentDatabasesDeadPrimaries = (info, dump) => {
-    let databases = [];
+    const databases = [];
 
     _.each(dump.arango.Current.Databases, function (database, name) {
       _.each(database, function (primary, pname) {
-        if (!info.primaries.hasOwnProperty(pname)) {
+        if (!_.has(info.primaries, pname)) {
           databases.push({
             database: name,
             primary: pname,
@@ -683,7 +688,7 @@ exports.run = function (extra, args) {
   const printCurrentDatabasesDeadPrimaries = function (info) {
     if (info.databasesDeadPrimaries.length > 0) {
       printBad('Your cluster has dead primaries in Current');
-      let table = new AsciiTable('Dead primaries in Current');
+      const table = new AsciiTable('Dead primaries in Current');
       table.setHeading('Database', 'Primary');
 
       _.each(info.databasesDeadPrimaries, function (zombie) {
@@ -700,10 +705,10 @@ exports.run = function (extra, args) {
 
   const saveCurrentDatabasesDeadPrimaries = function (info) {
     if (info.databasesDeadPrimaries.length > 0) {
-      let output = [];
+      const output = [];
 
       _.each(info.databasesDeadPrimaries, function (zombie) {
-        output.push({ database: zombie.database, primary: zombie.primary, data: zombie.data });
+        output.push({database: zombie.database, primary: zombie.primary, data: zombie.data});
       });
 
       fs.write("dead-primaries.json", JSON.stringify(output));
@@ -725,7 +730,7 @@ exports.run = function (extra, args) {
   const printEmptyDatabases = function (info) {
     if (info.emptyDatabases.length > 0) {
       printBad('Your cluster has some skeleton databases (databases without collections)');
-      let table = new AsciiTable('Skeletons');
+      const table = new AsciiTable('Skeletons');
       table.setHeading('Database name');
 
       _.each(info.emptyDatabases, function (database) {
@@ -742,10 +747,10 @@ exports.run = function (extra, args) {
 
   const saveEmptyDatabases = function (info) {
     if (info.emptyDatabases.length > 0) {
-      let output = [];
+      const output = [];
 
       _.each(info.emptyDatabases, function (skeleton) {
-        output.push({ database: skeleton.name, data: skeleton.data });
+        output.push({database: skeleton.name, data: skeleton.data});
       });
 
       fs.write("skeleton-databases.json", JSON.stringify(output));
@@ -759,21 +764,21 @@ exports.run = function (extra, args) {
     info.missingCollections = [];
 
     _.each(_.sortBy(info.databases, x => x.name), function (database, name) {
-      let system = database.collections.filter(function (c) {
+      const system = database.collections.filter(function (c) {
         return c.name[0] === '_';
       }).map(function (c) {
         return c.name;
       });
 
-      let missing = [];
-      [ "_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues" ].forEach(function (name) {
+      const missing = [];
+      ["_apps", "_appbundles", "_aqlfunctions", "_graphs", "_jobs", "_queues"].forEach(function (name) {
         if (system.indexOf(name) === -1) {
           missing.push(name);
         }
       });
 
       if (missing.length > 0) {
-        info.missingCollections.push({ database: database.name, missing });
+        info.missingCollections.push({database: database.name, missing});
       }
     });
   };
@@ -781,7 +786,7 @@ exports.run = function (extra, args) {
   const printMissingCollections = function (info) {
     if (info.missingCollections.length > 0) {
       printBad('Your cluster is missing relevant system collections:');
-      let table = new AsciiTable('Missing collections');
+      const table = new AsciiTable('Missing collections');
       table.setHeading('Database', 'Collections');
 
       _.each(info.missingCollections, function (entry) {
@@ -798,7 +803,7 @@ exports.run = function (extra, args) {
 
   const saveMissingCollections = function (info) {
     if (info.missingCollections.length > 0) {
-      let output = info.missingCollections;
+      const output = info.missingCollections;
 
       fs.write("missing-collections.json", JSON.stringify(output));
       print("To remedy the missing collections issue please run the task " +
@@ -811,14 +816,14 @@ exports.run = function (extra, args) {
   const extractCleanedFailoverCandidates = (info, dump) => {
     const currentCollections = dump.arango.Current.Collections;
     const cleanedServers = dump.arango.Target.CleanedServers;
-    let fixes = {};
+    const fixes = {};
     Object.keys(currentCollections).forEach(function (dbname) {
-      let database = dump.arango.Current.Collections[dbname];
+      const database = dump.arango.Current.Collections[dbname];
       Object.keys(database).forEach(function (colname) {
-        let collection = database[colname];
+        const collection = database[colname];
         Object.keys(collection).forEach(function (shname) {
-          let shard = collection[shname];
-          let inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
+          const shard = collection[shname];
+          const inter = _.intersectionWith(cleanedServers, shard.failoverCandidates);
           let left = shard.failoverCandidates;
           left = _.difference(left, inter);
           if (inter.length > 0) {
@@ -854,12 +859,12 @@ exports.run = function (extra, args) {
     };
     info.outOfSyncFollowers = [];
     for (const [db, collections] of Object.entries(planCollections)) {
-      if (!currentCollections.hasOwnProperty(db)) {
+      if (!_.has(currentCollections, db)) {
         // database skeleton or  so, don't care
         continue;
       }
       for (const [name, col] of Object.entries(collections)) {
-        const { shards } = col;
+        const {shards} = col;
         if (!shards || Object.keys(shards).length === 0) {
           continue;
         }
@@ -878,7 +883,7 @@ exports.run = function (extra, args) {
   };
 
   const printOutOfSyncFollowers = (info) => {
-    const { outOfSyncFollowers } = info;
+    const {outOfSyncFollowers} = info;
     const counters = new Map();
     if (outOfSyncFollowers.length > 0) {
       printBad('Your cluster has collections where followers are out of sync');
@@ -911,12 +916,12 @@ exports.run = function (extra, args) {
     const planCollections = dump.arango.Plan.Collections;
     for (const [db, collections] of Object.entries(planCollections)) {
       for (const [name, col] of Object.entries(collections)) {
-        const { indexes } = col;
+        const {indexes} = col;
         if (!indexes || Object.keys(indexes).length === 0) {
           continue;
         }
         let failed = false;
-        let newIndexes = [];
+        const newIndexes = [];
         for (const [pos, index] of Object.entries(indexes)) {
           if (index.type === "edge" &&
               index.name === "edge" &&
@@ -927,20 +932,20 @@ exports.run = function (extra, args) {
 
           if (index.id === "1") {
             newIndexes.push({
-              "id": "1",
-              "type": "edge",
-              "name": "edge",
-              "fields": [ "_from" ],
-              "unique": false,
-              "sparse": false
+              id: "1",
+              type: "edge",
+              name: "edge",
+              fields: ["_from"],
+              unique: false,
+              sparse: false
             });
             newIndexes.push({
-              "id": "2",
-              "type": "edge",
-              "name": "edge",
-              "fields": [ "_to" ],
-              "unique": false,
-              "sparse": false
+              id: "2",
+              type: "edge",
+              name: "edge",
+              fields: ["_to"],
+              unique: false,
+              sparse: false
             });
           } else if (index.id !== "2") {
             newIndexes.push(index);
@@ -958,7 +963,7 @@ exports.run = function (extra, args) {
   };
 
   const printBrokenEdgeIndexes = (info) => {
-    const { brokenEdgeIndexes } = info;
+    const {brokenEdgeIndexes} = info;
     if (brokenEdgeIndexes.length > 0) {
       printBad('Your cluster has broken edge indexes');
       return true;
@@ -969,7 +974,7 @@ exports.run = function (extra, args) {
   };
 
   const saveBrokenEdgeIndexes = function (info) {
-    const { brokenEdgeIndexes } = info;
+    const {brokenEdgeIndexes} = info;
     if (brokenEdgeIndexes.length > 0) {
       fs.write("broken-edge-indexes.json", JSON.stringify(brokenEdgeIndexes));
       print("To remedy the broken-edge-index issue please run the task " +
@@ -979,18 +984,19 @@ exports.run = function (extra, args) {
     }
   };
 
+/*
   const extractShardingStrategy = (info, dump) => {
     const planCollections = dump.arango.Plan.Collections;
     const planDBs = dump.arango.Plan.Databases;
     info.shardingStrategy = [];
     for (const [db, collections] of Object.entries(planCollections)) {
-      if (!planDBs.hasOwnProperty(db)) {
+      if (!_.has(planDBs, db)) {
         // This database has Collections but is deleted.
         info.noPlanDatabases.push(db, collections);
         continue;
       }
       for (const [cid, col] of Object.entries(collections)) {
-        const { name, type, shardingStrategy, isSmart } = col;
+        const {name, type, shardingStrategy, isSmart} = col;
         if (shardingStrategy) {
           continue;
         }
@@ -1014,7 +1020,7 @@ exports.run = function (extra, args) {
   };
 
   const printShardingStrategy = (info) => {
-    const { shardingStrategy } = info;
+    const {shardingStrategy} = info;
     if (shardingStrategy.length > 0) {
       printBad('Your cluster has sharding strategies that need fixing');
       return true;
@@ -1025,7 +1031,7 @@ exports.run = function (extra, args) {
   };
 
   const saveShardingStrategy = function (info) {
-    const { shardingStrategy } = info;
+    const {shardingStrategy} = info;
     if (shardingStrategy.length > 0) {
       fs.write("sharding-strategy.json", JSON.stringify(shardingStrategy));
       print("To remedy the sharding-strategy issue please run the task " +
@@ -1034,6 +1040,7 @@ exports.run = function (extra, args) {
       print();
     }
   };
+*/
 
   const info = {};
 
