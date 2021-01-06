@@ -524,10 +524,8 @@ exports.run = function (extra, args) {
     const planCollections = dump.arango.Plan.Collections;
     const currentCollections = dump.arango.Current.Collections;
     const fixes = [];
-    Object.keys(currentCollections).forEach(function (dbname) {
-      const database = dump.arango.Current.Collections[dbname];
-      Object.keys(database).forEach(function (cid) {
-        const collection = database[cid];
+    for (const [dbname, database] of Object.entries(currentCollections)) {
+      for (const [cid, collection] of Object.entries(database)) {
         Object.keys(collection).forEach(function (shname) {
           const shard = collection[shname];
           const candidates = shard.failoverCandidates;
@@ -549,8 +547,8 @@ exports.run = function (extra, args) {
             });
           }
         });
-      });
-    });
+      }
+    }
     info.unplannedFailoverCandidates = fixes;
   };
 
