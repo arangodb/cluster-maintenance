@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print */
+/* global print, db, arango */
 exports.name = "analyze";
 exports.group = "analyze tasks";
 exports.args = [
@@ -357,7 +357,7 @@ exports.run = function (extra, args) {
       printGood('Your cluster has consistent DOCUMENT calls');
       return false;
     }
-  }
+  };
 
   const printDistributionGroups = (info) => {
     const { noInsyncAndDeadLeader } = info;
