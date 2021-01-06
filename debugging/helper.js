@@ -175,7 +175,7 @@ const getAgencyDumpFromObject = (content) => {
     return undefined;
   } else if (Array.isArray(content)) {
     return content[0];
-  } else if (content.hasOwnProperty(".agency") && content.hasOwnProperty("arango")) {
+  } else if (_.has(content, ".agency") && _.has(content, "arango")) {
     return content;
   } else {
     return content.agency;
@@ -184,7 +184,7 @@ const getAgencyDumpFromObject = (content) => {
 
 const getAgencyDumpFromObjectOrAgency = (obj = undefined) => {
   if (obj) {
-    let agency = getAgencyDumpFromObject(obj);
+    const agency = getAgencyDumpFromObject(obj);
     return [agency];
   } else {
     switchToAgencyLeader();
@@ -212,7 +212,7 @@ const findAgencyFromCoordinator = () => {
     fatal("Cannot read '/_admin/cluster/health', got: ", JSON.stringify(response));
   }
 
-  for (let key in response.Health) {
+  for (const key in response.Health) {
     const server = response.Health[key];
 
     if (server.Role === 'Agent' && server.Status === 'GOOD') {
@@ -269,7 +269,7 @@ const switchToAgencyLeader = () => {
 
 const getAgencyHistoryFromCoordinator = () => {
   checkCoordinator();
-  let response = httpWrapper('GET', "/_api/cluster/agency-dump");
+  const response = httpWrapper('GET', "/_api/cluster/agency-dump");
   if (response.error) {
     if (response.code === 403 && response.errorNum === 11) {
       fatal("History is not supported by this version");
@@ -379,12 +379,13 @@ const checkArgs = (task, args) => {
         toSet.value = readJsonFile(given, true /* must read */);
         break;
       case 'boolean':
-      case 'bool':
-        const v = given.toLowerCase();
-        if (v === 'true' || v === '1' || v === 'y') {
-          toSet.value = true;
-        } else {
-          toSet.value = false;
+      case 'bool': {
+          const v = given.toLowerCase();
+          if (v === 'true' || v === '1' || v === 'y') {
+            toSet.value = true;
+          } else {
+            toSet.value = false;
+          }
         }
         break;
       case 'int':
@@ -456,6 +457,7 @@ const extractDatabases = function (info, dump) {
   info.shardsPrimary = {};
   info.zombies = [];
   info.broken = [];
+  info.obsoleteCollections = [];
 
   const allCollections = dump.arango.Plan.Collections;
 
@@ -490,7 +492,16 @@ const extractDatabases = function (info, dump) {
         };
 
         database.collections.push(coll);
-        info.collections[full] = coll;
+
+        if (_.has(info.collections, full)) {
+          info.obsoleteCollections.push(full);
+
+          if (info.collections[full].id > coll.id) {
+            info.collections[full] = coll;
+          }
+        } else {
+          info.collections[full] = coll;
+        }
 
         coll.shards = [];
         coll.leaders = [];
@@ -587,7 +598,7 @@ const findServer = function (dump, name) {
   const health = dump.arango.Supervision.Health;
 
   if (_.has(health, name)) {
-    return { serverId: name, shortName: health[name].ShortName };
+    return {serverId: name, shortName: health[name].ShortName};
   }
 
   let serverId = "";
@@ -600,7 +611,7 @@ const findServer = function (dump, name) {
     }
   });
 
-  return { serverId, shortName };
+  return {serverId, shortName};
 };
 
 const showServers = function (dump, agency) {

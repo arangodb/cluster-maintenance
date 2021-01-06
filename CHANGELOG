@@ -1,6 +1,10 @@
 v1.0.5 (xxxx-xx-xx)
 -------------------
 
+* removed obsolete collections from output
+
+* RF for follower collections is now displayed correctly
+
 * added a detection for DOCUMENT in AQL, which may not find existing documents in
   one-shard databases.
 
