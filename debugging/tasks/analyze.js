@@ -602,7 +602,7 @@ exports.run = function (extra, args) {
     const rfs = {};
 
     _.each(info.collections, function (collection, name) {
-      if (!collection.distrbuteShardsLike) {
+      if (!collection.distributeShardsLike) {
         rfs[collection.id] = collection.replicationFactor;
       }
     });
