@@ -331,9 +331,7 @@ exports.run = function (extra, args) {
             for (const vocbase of databasesToTest) {
               db._useDatabase(vocbase);
               const {sharding} = db._properties();
-              print("YOLO 1 " + sharding);
               if (sharding !== "single") {
-                print("YOLO");
                 info.oneShardIncensistencyDetected.add(vocbase);
               }
             }
