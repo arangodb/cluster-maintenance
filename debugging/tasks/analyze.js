@@ -1,5 +1,5 @@
 /* jshint globalstrict:false, strict:false, sub: true */
-/* global print */
+/* global print, db, arango */
 exports.name = "analyze";
 exports.group = "analyze tasks";
 exports.args = [
@@ -309,6 +309,53 @@ exports.run = function (extra, args) {
     info.noInsyncFollower = noInsyncFollower;
     info.unplannedLeader = unplannedLeader;
     info.noInsyncAndDeadLeader = noInsyncAndDeadLeader;
+  };
+
+  const extractInconsistentOneShardDatabases = (info, dump) => {
+    info.oneShardIncensistencyDetected = new Set();
+    if (info.__usesLiveServer) {
+      const health = dump.arango.Supervision.Health;
+      const databasesToTest = [];
+      for (const [dbname, {sharding}] of Object.entries(dump.arango.Plan.Databases)) {
+        if (sharding === "single") {
+          // This database is supposed to be a one shard database
+          databasesToTest.push(dbname);
+        }
+      }
+      if (databasesToTest.length > 0) {
+        for (const [server, {Status, Endpoint}] of Object.entries(health)) {
+          if (server.startsWith("PRMR-") && Status === "GOOD") {
+            print("INFO Testing Server '" + server);
+            arango.reconnect(Endpoint, "_system");
+            for (const vocbase of databasesToTest) {
+              db._useDatabase(vocbase);
+              const {sharding} = db._properties();
+              print("YOLO 1 " + sharding);
+              if (sharding !== "single") {
+                print("YOLO");
+                info.oneShardIncensistencyDetected.add(vocbase);
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const printInconsistentOneShardDatabases = (info) => {
+    if (info.oneShardIncensistencyDetected.size > 0) {
+      printBad('Your cluster has inconsistencies in DOCUMENT Aql call.');
+      const table = new AsciiTable('Databases with DOCUMENT calls that may not find data');
+      table.setHeading('Database');
+      for (const db of info.oneShardIncensistencyDetected) {
+        table.addRow(db);
+      }
+      print(table.toString());
+      return true;
+    } else {
+      printGood('Your cluster has consistent DOCUMENT calls');
+      return false;
+    }
   };
 
   const printDistributionGroups = (info) => {
@@ -984,7 +1031,6 @@ exports.run = function (extra, args) {
     }
   };
 
-/*
   const extractShardingStrategy = (info, dump) => {
     const planCollections = dump.arango.Plan.Collections;
     const planDBs = dump.arango.Plan.Databases;
@@ -1040,13 +1086,14 @@ exports.run = function (extra, args) {
       print();
     }
   };
-*/
 
   const info = {};
 
   if (stores !== undefined) {
     info.callbacks = stores.read_db[2];
   }
+  // If we have parsed a file, we are not on a live server
+  info.__usesLiveServer = !parsedFile;
 
   // extract info
   extractFailed(info, dump);
@@ -1062,8 +1109,9 @@ exports.run = function (extra, args) {
   extractOutOfSyncFollowers(info, dump);
   extractCleanedFailoverCandidates(info, dump);
   extractBrokenEdgeIndexes(info, dump);
-  // extractShardingStrategy(info, dump);
+  extractShardingStrategy(info, dump);
   extractUnplannedFailoverCandidates(info, dump);
+  extractInconsistentOneShardDatabases(info, dump);
 
   let infected = false;
 
@@ -1089,8 +1137,9 @@ exports.run = function (extra, args) {
   infected = printOutOfSyncFollowers(info) || infected;
   infected = printDistributionGroups(info) || infected;
   infected = printBrokenEdgeIndexes(info) || infected;
-  // infected = printShardingStrategy(info) || infected;
+  infected = printShardingStrategy(info) || infected;
   infected = printUnplannedFailoverCandidates(info) || infected;
+  infected = printInconsistentOneShardDatabases(info) || infected;
   print();
 
   if (infected) {
@@ -1105,7 +1154,7 @@ exports.run = function (extra, args) {
     saveMissingCollections(info);
     saveCleanedFailoverCandidates(info);
     saveBrokenEdgeIndexes(info);
-    // saveShardingStrategy(info);
+    saveShardingStrategy(info);
     saveUnplannedFailoverCandidates(info);
   } else {
     printGood('Did not detect any issues in your cluster');
