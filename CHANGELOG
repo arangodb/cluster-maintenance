@@ -1,3 +1,10 @@
+v1.0.5 (xxxx-xx-xx)
+-------------------
+
+* added a detection for DOCUMENT in AQL, which may not find existing documents in
+  one-shard databases.
+
+
 v1.0.4 (2020-08-01)
 -------------------
 
