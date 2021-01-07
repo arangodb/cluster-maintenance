@@ -139,7 +139,7 @@ will accept an agency dump JSON file as their input.
 One can run the `dump` task against the cluster's leader agent, e.g.:
 
 ```
-> ./maintenance.sh --server.endpoint AGENT dump ./agency-dump.jso
+> ./maintenance.sh --server.endpoint AGENT dump ./agency-dump.json
 ```
 
 **Important:** do not use the coordinator route to create the agency
