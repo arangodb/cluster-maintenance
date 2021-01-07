@@ -1,4 +1,4 @@
-# ArangoDB Debug Scripts
+# ArangoDB Cluster Maintenance Scripts
 
 **These scripts are to be used with caution, under the guidance of ArangoDB support.**
 
