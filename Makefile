@@ -1,7 +1,7 @@
 .PHONY: help readme version dist targz
 
 help:
-	@echo "ArangoDB debug scripts"
+	@echo "ArangoDB Maintenance Tools"
 	@echo
 	@echo "make help"
 	@echo "  show this help"
@@ -27,13 +27,13 @@ dist:
 
 targz:
 	@echo "generating archive for $V"
-	@rm -rf work/debug-scripts-$V
-	@mkdir -p work/debug-scripts-$V
+	@rm -rf work/maintenance-$V
+	@mkdir -p work/maintenance-$V
 	@tar -c -f - \
-		CHANGELOG LICENSE Makefile README.md VERSION arangodb-debug.sh \
-		`find debugging -name "*.js"` \
-		 | tar -C work/debug-scripts-$V -x -f -
-	@tar -c -z -f work/debug-scripts-$V.tar.gz -C work debug-scripts-$V
-	@mv work/debug-scripts-$V work/debug-scripts
-	@tar -c -z -f work/debug-scripts.tar.gz -C work debug-scripts
-	@rm -rf work/debug-scripts
+		CHANGELOG LICENSE Makefile README.md VERSION maintenance.sh maintenance.ps1 \
+		`find lib -name "*.js"` \
+		 | tar -C work/maintenance-$V -x -f -
+	@tar -c -z -f work/maintenance-$V.tar.gz -C work maintenance-$V
+	@mv work/maintenance-$V work/maintenance
+	@tar -c -z -f work/maintenance.tar.gz -C work maintenance
+	@rm -rf work/maintenance
