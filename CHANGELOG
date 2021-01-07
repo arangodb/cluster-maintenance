@@ -1,4 +1,4 @@
-v1.0.5 (xxxx-xx-xx)
+v1.0.5 (2021-01-07)
 -------------------
 
 * removed obsolete collections from output
@@ -7,6 +7,9 @@ v1.0.5 (xxxx-xx-xx)
 
 * added a detection for DOCUMENT in AQL, which may not find existing documents in
   one-shard databases.
+
+* added a detection of unplanned failover canditates. Sometimes shards that are 
+  already dropped stay in failoverCandidates
 
 
 v1.0.4 (2020-08-01)

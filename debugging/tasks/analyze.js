@@ -566,6 +566,8 @@ exports.run = function (extra, args) {
     });
 
     print(table.toString());
+    print();
+
     return true;
   };
 
