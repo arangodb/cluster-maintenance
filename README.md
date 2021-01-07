@@ -1,12 +1,12 @@
-# ArangoDB Debug Scripts
+# ArangoDB Cluster Maintenance Tools
 
 **These scripts are to be used with caution, under the guidance of ArangoDB support.**
 
 ## Purpose
 
-A collection of several helper scripts that gather diagnostic
-information about an ArangoDB cluster and also optionally apply
-modifications to it.
+A collection of several tools that gather diagnostic information
+about an ArangoDB cluster and also optionally apply modifications
+to it.
 
 ## Prerequisites
 
@@ -14,11 +14,15 @@ In order to use these scripts, a working installation of the
 ArangoShell (arangosh) is needed. The scripts currently support
 ArangoDB versions 3.3, 3.4, 3.5, 3.6, and 3.7.
 
+Please note, that some tasks are only available in certain
+ArangoDB versions. *help* will show which task is supported
+by which version.
+
 ## Installation
 
 Just clone this repository to some location on your local filesystem,
-then `cd` into the directory. Please note that some of the debug
-scripts may want to write into that directory too.
+then `cd` into the directory. Please note that some of the maintenance
+tools may want to write into that directory too.
 
 ## Usage
 
@@ -26,13 +30,13 @@ If `arangosh` is installed and is found in your `$PATH` you should be
 able to just run:
 
 ```
-./arangodb-debug.sh help
+./maintenance.sh help
 ```
 
 otherwise you should set the environment variable `ARANGOSH`:
 
 ```
-ARANGOSH=./path/to/arangosh ./arangodb-debug.sh help
+ARANGOSH=./path/to/arangosh ./maintenance.sh help
 ```
 
 Note that you might be asked for a password. For help, just press
@@ -44,11 +48,11 @@ ArangoDB versions and a short description of the task. For this
 instruction, we will always use the short version of the command.
 
 ```
-> ./arangodb-debug.sh help
+> ./maintenance.sh help
 Please specify a password:
 
-General Usage: ./debugging/index.js <taskname> [parameters]
-   Help Usage: ./debugging/index.js help <taskname>
+General Usage: ./maintenance.sh <taskname> [parameters]
+   Help Usage: ./maintenance.sh help <taskname>
 
 Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
   post-agency-plan                     3.3.23 - 3.6.99    Posts an agency dump to an ArangoDB agency leader.
@@ -81,7 +85,7 @@ If you pass a task name after `help` you will get additional
 information on the task and how to invoke it, for example:
 
 ```
-> ./arangodb-debug.sh help create-missing-system-collections
+> ./maintenance.sh help create-missing-system-collections
 Please specify a password:
 Usage for task: create-missing-system-collections
 
@@ -104,7 +108,7 @@ to a specific endpoint and using a specific database user, use
 `--server.endpoint` and `--server.username`, e.g.:
 
 ```
-> ./arangodb-debug.sh --server.endpoint tcp://domain:port --server.username admin create-missing-system-collections
+> ./maintenance.sh --server.endpoint tcp://domain:port --server.username admin create-missing-system-collections
 ```
 
 If connecting to an SSL enabled server you need to use `ssl` instead
@@ -135,7 +139,7 @@ will accept an agency dump JSON file as their input.
 One can run the `dump` task against the cluster's leader agent, e.g.:
 
 ```
-> ./arangodb-debug.sh dump --server.endpoint AGENT
+> ./maintenance.sh dump --server.endpoint AGENT
 ```
 
 **Important:** do not use the coordinator route to create the agency
