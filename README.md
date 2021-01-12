@@ -133,7 +133,7 @@ given endpoints twice.
 
 ## Creating an Agency Dump
 
-In alternative to connecting to a leader agent, some of the scripts
+An alternative to connecting to a leader agent, some of the scripts
 will accept an agency dump JSON file as their input.
 
 One can run the `dump` task against the cluster's leader agent, e.g.:
