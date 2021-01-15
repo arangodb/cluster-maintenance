@@ -1,3 +1,15 @@
+v2.1.0 (2021-01-14)
+-------------------
+
+* added change-database-write-concern
+
+
+v2.0.0 (2021-01-14)
+-------------------
+
+* renamed to cluster maintenance tools
+
+
 v1.0.5 (2021-01-07)
 -------------------
 
