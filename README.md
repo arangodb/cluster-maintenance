@@ -1,7 +1,7 @@
 # ArangoDB Cluster Maintenance Tools
 
-**The cluster Maintaince tools can be used against the enterprise
-version of ArangoDB. They to be used with caution, under the
+**The cluster Maintaince tools can only be used against the enterprise
+version of ArangoDB. They must be used with caution, under the
 guidance of ArangoDB support. It is possible to accidentally delete
 all date. Do not use on your own.**
 
