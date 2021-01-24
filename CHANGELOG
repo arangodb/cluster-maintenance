@@ -7,60 +7,60 @@ v2.1.1 (2021-XX-XX)
 v2.1.0 (2021-01-14)
 -------------------
 
-* added change-database-write-concern
+* Added change-database-write-concern.
 
 
 v2.0.0 (2021-01-14)
 -------------------
 
-* renamed to cluster maintenance tools
+* Renamed to cluster maintenance tools.
 
 
 v1.0.5 (2021-01-07)
 -------------------
 
-* removed obsolete collections from output
+* Removed obsolete collections from output.
 
-* RF for follower collections is now displayed correctly
+* RF for follower collections is now displayed correctly.
 
-* added a detection for DOCUMENT in AQL, which may not find existing documents in
+* Added a detection for DOCUMENT in AQL, which may not find existing documents in
   one-shard databases.
 
-* added a detection of unplanned failover canditates. Sometimes shards that are 
-  already dropped stay in failoverCandidates
+* Added a detection of unplanned failover canditates. Sometimes shards that are 
+  already dropped stay in failoverCandidates.
 
 
 v1.0.4 (2020-08-01)
 -------------------
 
-* added safety check for show-dbstats
+* Added safety check for show-dbstats.
 
-* added dockerfile
+* Added dockerfile.
 
 
 v1.0.3 (2020-06-05)
 -------------------
 
-* added switch for community
+* Added switch for community.
 
-* added fix for sharding strategy
+* Added fix for sharding strategy.
 
 
 v1.0.2 (2020-06-05)
 -------------------
 
-* fix for older versions
+* Added fix for older versions.
 
-* added sharding strategy
+* Added sharding strategy.
 
 
 v1.0.1 (2020-06-05)
 -------------------
 
-* added Makefile to generate distribution archive
+* Added Makefile to generate distribution archive.
 
 
 v1.0.0 (2020-06-05)
 -------------------
 
-* initial release
+* Initial release.
