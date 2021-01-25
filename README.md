@@ -1,9 +1,9 @@
 # ArangoDB Cluster Maintenance Tools
 
-**The cluster Maintaince tools can only be used against the enterprise
-version of ArangoDB. They must be used with caution, under the
+**The Cluster Maintenance tools can only be used against the Enterprise
+Edition of ArangoDB. They must be used with caution, under the
 guidance of ArangoDB support. It is possible to accidentally delete
-all date. Do not use on your own.**
+all data. Do not use on your own.**
 
 ## Purpose
 
@@ -15,7 +15,8 @@ to it.
 
 In order to use these scripts, a working installation of the
 ArangoShell (arangosh) is needed. The scripts currently support
-ArangoDB versions 3.3, 3.4, 3.5, 3.6, and 3.7.
+ArangoDB versions 3.6 and 3.7. Support for further upcoming stable 
+ArangoDB releases will be added once they are released.
 
 Please note, that some tasks are only available in certain
 ArangoDB versions. *help* will show which task is supported
