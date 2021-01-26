@@ -1,6 +1,8 @@
 v2.1.1 (2021-XX-XX)
 -------------------
 
+* Fixed Dockerfile to use correct scripts.
+
 * Added missing sanity check.
 
 

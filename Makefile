@@ -25,6 +25,9 @@ dist:
 	@mkdir -p work
 	$(MAKE) targz V=`git describe --all --tags --long --dirty=-dirty | sed -e 's:tags/::' | sed -e 's:/:_:g'`
 
+docker: dist
+	cd containers; cp ../work/maintenance.tar.gz .; docker build .
+
 targz:
 	@echo "generating archive for $V"
 	@rm -rf work/maintenance-$V

@@ -1,7 +1,7 @@
 FROM arangodb:3.7
 MAINTAINER Frank Celler <info@arangodb.com>
 
-ADD debug-scripts.tar.gz /
-ADD arangodb-debug.sh /
+ADD maintenance.tar.gz /
+ADD maintenance.sh /
 
-ENTRYPOINT [ "/arangodb-debug.sh" ]
+ENTRYPOINT [ "/maintenance.sh" ]
