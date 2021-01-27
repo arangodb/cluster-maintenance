@@ -1,4 +1,12 @@
-v2.1.1 (2021-XX-XX)
+v2.2.0 (2021-01-27)
+-------------------
+
+* Added task "show-collections" to show properties of all collections.
+
+* Added task "change-collection-wait-for-sync" to change waitForSync property of all collections.
+
+
+v2.1.1 (2021-01-26)
 -------------------
 
 * Fixed Dockerfile to use correct scripts.
