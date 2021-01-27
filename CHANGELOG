@@ -1,3 +1,9 @@
+v2.2.1 (2021-01-XX)
+-------------------
+
+* Safety net if property cannot be changed.
+
+
 v2.2.0 (2021-01-27)
 -------------------
 
@@ -36,7 +42,7 @@ v1.0.5 (2021-01-07)
 * Added a detection for DOCUMENT in AQL, which may not find existing documents in
   one-shard databases.
 
-* Added a detection of unplanned failover canditates. Sometimes shards that are 
+* Added a detection of unplanned failover canditates. Sometimes shards that are
   already dropped stay in failoverCandidates.
 
 
