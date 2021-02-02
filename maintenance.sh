@@ -7,12 +7,21 @@ else
 fi
 
 if test -z "$arangosh"; then
-    echo "$0: cannot find arangosh"
+    echo -n "$0: cannot find arangosh."
+    if test -z "$ARANGOSH"; then
+        echo -n " it is possible to set the environment variable ARANGOSH to the arangosh executable, if it is not in the path."
+    fi
+    echo
+    exit 1
+fi
+    
+if test -d "$arangosh"; then
+    echo "$0: '$arangosh' is a directory. it should point to the arangosh executable instead."
     exit 1
 fi
 
 if test ! -x "$arangosh"; then
-    echo "$0: file '$arangosh' does not exist or not executable"
+    echo "$0: file '$arangosh' does not exist or is not executable."
     exit 1
 fi
 

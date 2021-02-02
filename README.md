@@ -118,7 +118,7 @@ to a specific endpoint and using a specific database user, use
 If connecting to an SSL enabled server you need to use `ssl` instead
 of `tcp` when specifying the server endpoint.
 
-In order to make use of JWT tokens please add
+In order to make use of JWT tokens, please add
 `--server.ask-jwt-secret` to the command-line.
 
 You can get your JWT in a kubernetes cluster with a command similar to
@@ -148,3 +148,23 @@ One can run the `dump` task against the cluster's leader agent, e.g.:
 
 **Important:** do not use the coordinator route to create the agency
 dump: create the dump connecting directly to the agency.
+
+## Overriding version checks
+
+Normally, all tasks provided by the cluster maintenance tools are restricted
+to a range of compatible ArangoDB versions. If the version of the ArangoDB
+instance the scripts are run against does not fall into the expected version
+range, then some or even all tasks may not be available. In this case, there 
+will be info messages about incompatible tasks at the start of the tool.
+
+In case the version check needs to be silenced, e.g. in case the tools are
+tried against a yet-unreleased preview version or simply for testing devel,
+the version check can be disabled via adding the option `--ignore-version`.
+
+```
+> ./maintenance.sh --server.endpoint ... help -- --ignore-version
+```
+
+Please note that the `--ignore-version` option must be preceded by another
+`--` separator, so that arangosh can tell the tool options from its own
+command-line options.
