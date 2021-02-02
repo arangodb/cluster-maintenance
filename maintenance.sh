@@ -9,7 +9,7 @@ fi
 if test -z "$arangosh"; then
     echo -n "$0: cannot find arangosh."
     if test -z "$ARANGOSH"; then
-        echo -n " it is possible to set the environment variable ARANGOSH to the arangosh executable, if it is not in the path."
+        echo -n " it is possible to set the environment variable ARANGOSH to the location of the arangosh executable, if it is not in the path."
     fi
     echo
     exit 1
