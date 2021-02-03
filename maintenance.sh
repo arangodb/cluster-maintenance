@@ -54,7 +54,11 @@ while test $# -gt 0; do
 done
 
 if test "$noEndpoint" -eq 1; then
-    $arangosh --javascript.execute ./lib/index.js $arangoArgs --server.endpoint none -- $scriptArgs
+    if test "$seenDashDash" -eq 1; then
+      $arangosh --javascript.execute ./lib/index.js --server.endpoint none $arangoArgs $scriptArgs
+    else
+      $arangosh --javascript.execute ./lib/index.js --server.endpoint none $arangoArgs -- $scriptArgs
+    fi
 elif test "$seenDashDash" -eq 1; then
     $arangosh --javascript.execute ./lib/index.js $arangoArgs $scriptArgs
 else
