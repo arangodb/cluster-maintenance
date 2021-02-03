@@ -25,8 +25,37 @@ if test ! -x "$arangosh"; then
     exit 1
 fi
 
-if test "$1" = "help"; then
-    $arangosh --javascript.execute ./lib/index.js --server.endpoint none "$@"
+nargs=$#
+scriptArgs=""
+noEndpoint=0
+dashDash="--"
+
+for arg do
+    case $arg in
+        help)
+	    scriptArgs="$scriptArgs $arg"
+	    noEndpoint=1
+	    ;;
+
+	--force|--ignore*)
+	    scriptArgs="$scriptArgs $arg"
+	    ;;
+
+	--)
+	    set -- "$@" "$arg"
+	    dashDash=""
+	    ;;
+
+	*)
+	    set -- "$@" "$arg"
+	    ;;
+    esac
+done
+
+shift "$nargs"
+
+if test "$noEndpoint" -eq 1; then
+    $arangosh --javascript.execute ./lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
 else
-    $arangosh --javascript.execute ./lib/index.js "$@"
+    $arangosh --javascript.execute ./lib/index.js "$@" $dashDash $scriptArgs
 fi

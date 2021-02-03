@@ -135,9 +135,17 @@ versions, namely in the ArangoDB 3.3 series and ArangoDB before 3.4.6.
 There we can not tell the server roles for sure so please check the
 given endpoints twice.
 
+## Creating an Agency History
+
+One can run the `history` task against the cluster's coordinator, e.g.:
+
+```
+> ./maintenance.sh --server.endpoint COORDINATOR history ./agency-history.json
+```
+
 ## Creating an Agency Dump
 
-An alternative to connecting to a leader agent, some of the scripts
+As an alternative to connecting to a leader agent, some of the scripts
 will accept an agency dump JSON file as their input.
 
 One can run the `dump` task against the cluster's leader agent, e.g.:
@@ -145,9 +153,6 @@ One can run the `dump` task against the cluster's leader agent, e.g.:
 ```
 > ./maintenance.sh --server.endpoint AGENT dump ./agency-dump.json
 ```
-
-**Important:** do not use the coordinator route to create the agency
-dump: create the dump connecting directly to the agency.
 
 ## Overriding version checks
 
@@ -162,9 +167,5 @@ tried against a yet-unreleased preview version or simply for testing devel,
 the version check can be disabled via adding the option `--ignore-version`.
 
 ```
-> ./maintenance.sh --server.endpoint ... help -- --ignore-version
+> ./maintenance.sh --server.endpoint ... help --ignore-version
 ```
-
-Please note that the `--ignore-version` option must be preceded by another
-`--` separator, so that arangosh can tell the tool options from its own
-command-line options.
