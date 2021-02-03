@@ -28,6 +28,7 @@ fi
 arangoArgs=""
 scriptArgs=""
 noEndpoint=0
+seenDashDash=0
 
 while test $# -gt 0; do
     case $1 in
@@ -39,6 +40,11 @@ while test $# -gt 0; do
 	--force|--ignore*)
 	    scriptArgs="$scriptArgs $1"
 	    ;;
+	--)
+	    arangoArgs="$arangoArgs $1"
+	    seenDashDash=1
+	    ;;
+
 	*)
 	    arangoArgs="$arangoArgs $1"
 	    ;;
@@ -48,6 +54,8 @@ done
 
 if test "$noEndpoint" -eq 1; then
     $arangosh --javascript.execute ./lib/index.js $arangoArgs --server.endpoint none -- $scriptArgs
+elif test "$seenDashDash" -eq 1; then
+    $arangosh --javascript.execute ./lib/index.js $arangoArgs $scriptArgs
 else
     $arangosh --javascript.execute ./lib/index.js $arangoArgs -- $scriptArgs
 fi
