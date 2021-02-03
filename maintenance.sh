@@ -40,6 +40,7 @@ while test $# -gt 0; do
 	--force|--ignore*)
 	    scriptArgs="$scriptArgs $1"
 	    ;;
+
 	--)
 	    arangoArgs="$arangoArgs $1"
 	    seenDashDash=1
