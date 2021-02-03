@@ -25,42 +25,37 @@ if test ! -x "$arangosh"; then
     exit 1
 fi
 
-arangoArgs=""
+nargs=$#
 scriptArgs=""
 noEndpoint=0
-seenDashDash=0
+dashDash="--"
 
-while test $# -gt 0; do
-    case $1 in
+for arg do
+    case $arg in
         help)
-	    scriptArgs="$scriptArgs $1"
+	    scriptArgs="$scriptArgs $arg"
 	    noEndpoint=1
 	    ;;
 
 	--force|--ignore*)
-	    scriptArgs="$scriptArgs $1"
+	    scriptArgs="$scriptArgs $arg"
 	    ;;
 
 	--)
-	    arangoArgs="$arangoArgs $1"
-	    seenDashDash=1
+	    set "$@" "$arg"
+	    dashDash=""
 	    ;;
 
 	*)
-	    arangoArgs="$arangoArgs $1"
+	    set "$@" "$arg"
 	    ;;
     esac
-    shift
 done
 
+shift "$nargs"
+
 if test "$noEndpoint" -eq 1; then
-    if test "$seenDashDash" -eq 1; then
-      $arangosh --javascript.execute ./lib/index.js --server.endpoint none $arangoArgs $scriptArgs
-    else
-      $arangosh --javascript.execute ./lib/index.js --server.endpoint none $arangoArgs -- $scriptArgs
-    fi
-elif test "$seenDashDash" -eq 1; then
-    $arangosh --javascript.execute ./lib/index.js $arangoArgs $scriptArgs
+    $arangosh --javascript.execute ./lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
 else
-    $arangosh --javascript.execute ./lib/index.js $arangoArgs -- $scriptArgs
+    $arangosh --javascript.execute ./lib/index.js "$@" $dashDash $scriptArgs
 fi
