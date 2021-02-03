@@ -42,7 +42,7 @@ for arg do
 	    ;;
 
 	--)
-	    set "$@" "$arg"
+	    set -- "$@" "$arg"
 	    dashDash=""
 	    ;;
 
