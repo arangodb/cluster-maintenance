@@ -47,7 +47,7 @@ for arg do
 	    ;;
 
 	*)
-	    set "$@" "$arg"
+	    set -- "$@" "$arg"
 	    ;;
     esac
 done
