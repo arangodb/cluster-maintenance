@@ -40,10 +40,30 @@ able to just run:
 otherwise you should set the environment variable `ARANGOSH`:
 
 ```
-ARANGOSH=./path/to/arangosh ./maintenance.sh help
+ARANGOSH=/path/to/arangosh ./maintenance.sh help
 ```
 
-Note that you might be asked for a password. For help, just press
+If the following error occurs, then it is also necessary to set the
+path for the arangosh JavaScript code:
+
+```
+FATAL [3537a] {general} failed to locate javascript.startup-directory directory, its neither available in '/usr/share/arangodb3/js' nor in ...
+```
+
+The JavaScript path for the arangosh can be set via the 
+`--javascript.startup-directory` option:
+
+```
+ARANGOSH=/path/to/arangosh ./maintenance.sh --javascript.startup-directory /path/to/js ...
+```
+
+For example:
+
+```
+ARANGOSH=/usr/local/bin/arangosh ./maintenance.sh --javascript.startup-directory /usr/local/share/arangodb3/js help
+```
+
+Please note that you might be asked for a password. For help, just press
 return. See below for more details.
 
 One of the above commands should provide you with a list of the
