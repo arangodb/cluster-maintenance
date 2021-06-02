@@ -33,10 +33,12 @@ targz:
 	@rm -rf work/maintenance-$V
 	@mkdir -p work/maintenance-$V
 	@tar -c -f - \
-		CHANGELOG LICENSE Makefile README.md VERSION maintenance.sh maintenance.ps1 \
+		CHANGELOG LICENSE Makefile README.md VERSION maintenance.sh maintenance.ps1 arangodb-debug.sh debugging \
 		`find lib -name "*.js"` \
 		 | tar -C work/maintenance-$V -x -f -
 	@tar -c -z -f work/maintenance-$V.tar.gz -C work maintenance-$V
 	@mv work/maintenance-$V work/maintenance
 	@tar -c -z -f work/maintenance.tar.gz -C work maintenance
+	@mv work/maintenance work/debug-scripts
+	@tar -c -z -f work/debug-scripts.tar.gz -C work debug-scripts
 	@rm -rf work/maintenance
