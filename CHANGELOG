@@ -1,7 +1,8 @@
-v2.8.0 (XXXX-XX-XX)
+v2.8.0 (2021-07-12)
 -------------------
 
-* detect shards, which appear synced but are not
+* jobs to detect and to repair shards, which appear synced but are not
+
 
 v2.7.0 (2021-06-14)
 -------------------
