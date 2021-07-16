@@ -123,6 +123,11 @@ To be used from the arangosh, with a privileged user (i.e. a user that
 has write privileges for all databases).
 ```
 
+Note: If you want to use the maintenance script via a Docker container, follow the next steps to create one:
+Run `make docker` first to prepare everything and implement the makefile section for the Docker container. 
+Then, navigate to the `containers` directory and run `docker build .`
+This builds the most recent Docker container which will then for instance be usable on a Kubernetes cluster.
+
 ## Authentication and SSL
 
 As shown by its detailed help, the task
