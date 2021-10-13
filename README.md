@@ -153,12 +153,30 @@ the following:
 kubectl get secrets nameofyourdep-jwt -o json | jq -r '.data.token' | base64 -D
 ```
 
-## Known Issues
+## Running the `analyze` task
 
-Please heed warnings about undetermined server roles in older
-versions, namely in the ArangoDB 3.3 series and ArangoDB before 3.4.6.
-There we can not tell the server roles for sure so please check the
-given endpoints twice.
+One of the most important tasks to run is the `analyze` task, which will produce
+an overview of the cluster's current state.
+
+The task can be run in two modes:
+* using an already created agency dump, stored in a JSON file on disk
+* using the current state of the cluster as provided by an agent or coordinator
+  instance.
+
+To run the task using an existing agency dump, please provide the filename to the
+dump:
+```
+> ./maintenance.sh --server.endpoint COORDINATOR analyze ./the-agency-dump.json
+```
+
+When not providing a filename with an agency dump, the `analyze` task will use the
+current cluster's state as provided by the agency or coordinator that is provided
+on the command-line.
+
+If the `analyze` task reports issues, it will write an output file to disk that can
+be used with some repair/adjustment tasks later.
+In this case the `analyze` task will print out follow-up instructions about which
+other tasks to invoke next.
 
 ## Creating an Agency History
 
@@ -187,9 +205,16 @@ instance the scripts are run against does not fall into the expected version
 range, then some or even all tasks may not be available. In this case, there 
 will be info messages about incompatible tasks at the start of the tool.
 
-In case the version check needs to be silenced, e.g. in case the tools are
-tried against a yet-unreleased preview version or simply for testing devel,
-the version check can be disabled via adding the option `--ignore-version`.
+Here is a (made up) example for a version mismatch message:
+```
+analyze: removing this task because of mismatching shell version (3.6.16) requires: 3.3.23 - 3.5.99
+```
+Tasks outside the accepted version range will not be available unless the
+version check is explicitly disabled. This can be necessary when running
+an old version of the maintenance scripts against a newer version of ArangoDB,
+or when using a not-yet-released preview version of ArangoDB.
+In these cases the version check can be disabled via adding the option 
+`--ignore-version`.
 
 ```
 > ./maintenance.sh --server.endpoint ... help --ignore-version
