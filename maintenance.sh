@@ -31,24 +31,31 @@ noEndpoint=0
 dashDash="--"
 
 for arg do
+    if test "$noEndpoint" -eq 1; then
+      # if we have seen help, we need to move all following arguments
+      # to the right of the "--", too.
+      scriptArgs="$scriptArgs $arg"
+      continue
+    fi
+
     case $arg in
-        help)
-	    scriptArgs="$scriptArgs $arg"
-	    noEndpoint=1
-	    ;;
+      help)
+        scriptArgs="$scriptArgs $arg"
+        noEndpoint=1
+        ;;
 
-	--force|--ignore*)
-	    scriptArgs="$scriptArgs $arg"
-	    ;;
+     --force|--ignore*)
+        scriptArgs="$scriptArgs $arg"
+        ;;
 
-	--)
-	    set -- "$@" "$arg"
-	    dashDash=""
-	    ;;
+     --)
+        set -- "$@" "$arg"
+        dashDash=""
+        ;;
 
-	*)
-	    set -- "$@" "$arg"
-	    ;;
+     *)
+        set -- "$@" "$arg"
+        ;;
     esac
 done
 
