@@ -61,8 +61,14 @@ done
 
 shift "$nargs"
 
+myPath="`realpath $0`"
+myPath="`dirname $myPath`"
+if [ "x$myPath" = "x" ]; then
+    myPath="."
+fi
+
 if test "$noEndpoint" -eq 1; then
-    $arangosh --javascript.execute ./lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
+    $arangosh --javascript.execute "$myPath"/lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
 else
-    $arangosh --javascript.execute ./lib/index.js "$@" $dashDash $scriptArgs
+    $arangosh --javascript.execute "$myPath"/lib/index.js "$@" $dashDash $scriptArgs
 fi
