@@ -26,7 +26,7 @@ fi
 fi
 
 if test -z "$ARANGOSH"; then
-    arangosh=`which arangosh`
+    arangosh=`command -v arangosh`
 else
     arangosh="$ARANGOSH"
 fi
