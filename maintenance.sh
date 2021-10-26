@@ -1,4 +1,20 @@
 #!/bin/sh
+if which realpath > /dev/null; then
+  true
+else
+  realpath() {
+    OURPWD=$PWD
+    cd "$(dirname "$1")"
+    LINK=$(readlink "$(basename "$1")")
+    while [ "$LINK" ]; do
+      cd "$(dirname "$LINK")"
+      LINK=$(readlink "$(basename "$1")")
+    done
+    REALPATH="$PWD/$(basename "$1")"
+    cd "$OURPWD"
+    echo "$REALPATH"
+  }
+fi
 
 if test -z "$ARANGOSH"; then
     arangosh=`which arangosh`
@@ -61,8 +77,14 @@ done
 
 shift "$nargs"
 
+myPath="`realpath $0`"
+myPath="`dirname $myPath`"
+if [ "x$myPath" = "x" ]; then
+    myPath="."
+fi
+
 if test "$noEndpoint" -eq 1; then
-    $arangosh --javascript.execute ./lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
+    $arangosh --javascript.execute "$myPath"/lib/index.js --server.endpoint none "$@" $dashDash $scriptArgs
 else
-    $arangosh --javascript.execute ./lib/index.js "$@" $dashDash $scriptArgs
+    $arangosh --javascript.execute "$myPath"/lib/index.js "$@" $dashDash $scriptArgs
 fi
