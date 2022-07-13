@@ -15,7 +15,7 @@ to it.
 
 In order to use these scripts, a working installation of the
 ArangoShell (arangosh) is needed. The scripts currently support
-ArangoDB versions 3.6 and 3.7. Support for further upcoming stable 
+ArangoDB versions 3.6, 3.7, 3.8 and 3.9. Support for further upcoming stable 
 ArangoDB releases will be added once they are released.
 
 Please note, that some tasks are only available in certain
@@ -79,13 +79,13 @@ General Usage: ./maintenance.sh <taskname> [parameters]
    Help Usage: ./maintenance.sh help <taskname>
 
 Post an agency plan to a new leader agency. Only for debug purpose! DO NOT USE IN PRODUCTION!:
-  post-agency-plan                     3.3.23 - 3.6.99    Posts an agency dump to an ArangoDB agency leader.
+  post-agency-plan                     3.3.23 - 3.9.99    Posts an agency dump to an ArangoDB agency leader.
 
 analyze tasks:
-  analyze                              3.3.23 - 3.6.99    Performs health analysis on your cluster and p  ...
+  analyze                              3.3.23 - 3.9.99    Performs health analysis on your cluster and p  ...
 
 move shard tasks:
-  create-move-analysis                 3.3.23 - 3.6.99    Creates analysis for a plan to rebalance shards in your cluster.
+  create-move-analysis                 3.3.23 - 3.9.99    Creates analysis for a plan to rebalance shards in your cluster.
   ...
 ```
 
