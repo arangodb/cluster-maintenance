@@ -15,7 +15,7 @@ to it.
 
 In order to use these scripts, a working installation of the
 ArangoShell (arangosh) is needed. The scripts currently support
-ArangoDB versions 3.6, 3.7, 3.8 and 3.9. Support for further upcoming stable 
+ArangoDB versions 3.8, 3.9 and 3.10. Support for further upcoming stable 
 ArangoDB releases will be added once they are released.
 
 Please note, that some tasks are only available in certain
