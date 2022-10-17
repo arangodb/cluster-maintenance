@@ -1,5 +1,5 @@
 #!/bin/sh
-if which realpath > /dev/null; then
+if command -v realpath > /dev/null; then
   true
 else
   realpath() {
@@ -16,28 +16,37 @@ else
   }
 fi
 
+if command -v /usr/bin/echo > /dev/null; then
+    ECHO=/usr/bin/echo
+else if command -v /bin/echo > /dev/null; then
+    ECHO=/bin/echo
+else
+    ECHO=echo
+fi
+fi
+
 if test -z "$ARANGOSH"; then
-    arangosh=`which arangosh`
+    arangosh=`command -v arangosh`
 else
     arangosh="$ARANGOSH"
 fi
 
 if test -z "$arangosh"; then
-    echo -n "$0: cannot find arangosh."
+    $ECHO -n "$0: cannot find arangosh."
     if test -z "$ARANGOSH"; then
-        echo -n " it is possible to set the environment variable ARANGOSH to the location of the arangosh executable, if it is not in the path."
+        $ECHO -n " it is possible to set the environment variable ARANGOSH to the location of the arangosh executable, if it is not in the path."
     fi
-    echo
+    $ECHO
     exit 1
 fi
     
 if test -d "$arangosh"; then
-    echo "$0: '$arangosh' is a directory. it should point to the arangosh executable instead."
+    $ECHO "$0: '$arangosh' is a directory. it should point to the arangosh executable instead."
     exit 1
 fi
 
 if test ! -x "$arangosh"; then
-    echo "$0: file '$arangosh' does not exist or is not executable."
+    $ECHO "$0: file '$arangosh' does not exist or is not executable."
     exit 1
 fi
 
