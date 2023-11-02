@@ -15,7 +15,7 @@ to it.
 
 In order to use these scripts, a working installation of the
 ArangoShell (arangosh) is needed. The scripts currently support
-ArangoDB versions 3.8, 3.9 and 3.10. Support for further upcoming stable 
+ArangoDB versions 3.10 and 3.11. Support for further upcoming stable 
 ArangoDB releases will be added once they are released.
 
 Please note, that some tasks are only available in certain
@@ -224,7 +224,7 @@ In these cases the version check can be disabled via adding the option
 The following steps are needed:
 
  - Edit `VERSION` and bump the version number, commit and push.
- - Create a tag with `git tag -l v2.9.3 ; git push --tags`.
+ - Create a tag with `git tag v2.9.3 ; git push --tags`.
  - Run `make dist` to create 3 files in the `work` folder.
  - Under `Releases` in the github page of the repository, click 
    "Draft new release", create a description, choose your tag and
