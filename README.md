@@ -219,6 +219,18 @@ In these cases the version check can be disabled via adding the option
 ```
 > ./maintenance.sh --server.endpoint ... help --ignore-version
 ```
+
+## Running tests
+
+There are a few tests, currently covering only basic functionality in
+analyze.js. The can be run as follows:
+
+```
+> node test/test-runner.js
+```
+
+Note that there's currently no CI set up to run them.
+
 ## How to create a release
 
 The following steps are needed:
