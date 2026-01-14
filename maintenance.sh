@@ -18,11 +18,10 @@ fi
 
 if command -v /usr/bin/echo > /dev/null; then
     ECHO=/usr/bin/echo
-else if command -v /bin/echo > /dev/null; then
+elif command -v /bin/echo > /dev/null; then
     ECHO=/bin/echo
 else
     ECHO=echo
-fi
 fi
 
 if test -z "$ARANGOSH"; then
@@ -39,7 +38,7 @@ if test -z "$arangosh"; then
     $ECHO
     exit 1
 fi
-    
+
 if test -d "$arangosh"; then
     $ECHO "$0: '$arangosh' is a directory. it should point to the arangosh executable instead."
     exit 1
